@@ -22,11 +22,17 @@ from tempfile import gettempdir
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
-from django.core.serializers.base import DeserializationError
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db import transaction
 from django.utils import simplejson
+
+from deep_serialize.settings import USE_INTERNAL_SERIALIZERS
+if USE_INTERNAL_SERIALIZERS:
+    from deep_serialize.serializers.base import DeserializationError
+else:
+    from django.core.serializers.base import DeserializationError
+
 
 from deep_serialize.exceptions import DoesNotNaturalKeyException
 from deep_serialize.utils import (has_natural_key,

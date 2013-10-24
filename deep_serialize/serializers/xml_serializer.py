@@ -5,7 +5,7 @@ XML serializer.
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.core.serializers import base
+from deep_serialize.serializers import base
 from django.db import models, DEFAULT_DB_ALIAS
 from django.utils.xmlutils import SimplerXMLGenerator
 from django.utils.encoding import smart_text

@@ -10,9 +10,9 @@ import sys
 from io import StringIO
 
 from django.db import models
-from django.core.serializers.base import DeserializationError
-from django.core.serializers.python import Serializer as PythonSerializer
-from django.core.serializers.python import Deserializer as PythonDeserializer
+from deep_serialize.serializers.base import DeserializationError
+from deep_serialize.serializers.python import Serializer as PythonSerializer
+from deep_serialize.serializers.python import Deserializer as PythonDeserializer
 from django.utils import six
 
 # Use the C (faster) implementation if possible

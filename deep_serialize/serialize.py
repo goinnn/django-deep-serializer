@@ -14,8 +14,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import logging
 import os
+
 from pprint import pprint
 from tempfile import gettempdir
 
@@ -25,7 +27,6 @@ from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db import transaction
-from django.utils import simplejson
 
 from deep_serialize.settings import USE_INTERNAL_SERIALIZERS
 
@@ -186,7 +187,7 @@ class Serializer(object):
                     sorted_function=None):
         with transaction.commit_manually():
             try:
-                fixtures_python = simplejson.loads(fixtures)
+                fixtures_python = json.loads(fixtures)
                 fixtures_python_changed = [obj for obj in fixtures_python if obj['fields'].pop('changed', True) and not obj['fields'].get('deleted', False)]
                 fixtures_python_deleted = [obj for obj in fixtures_python if obj['fields'].get('deleted', False)]
                 if getattr(settings, 'JSON_DEBUG', False):
@@ -280,7 +281,7 @@ class Serializer(object):
                 contents.append(obj.object)
                 exclude_contents.append(natural_key)
         if obj_does_not_exist:
-            fixtures_python = simplejson.loads(fixtures)
+            fixtures_python = json.loads(fixtures)
             fix_obj = fixtures_python[i]
             fixtures_python = fixtures_python[i + 1:]
             fixtures_python.append(fix_obj)

@@ -28,17 +28,15 @@ from django.db import transaction
 from django.utils import simplejson
 
 from deep_serialize.settings import USE_INTERNAL_SERIALIZERS
+
 if USE_INTERNAL_SERIALIZERS:
     from deep_serialize.serializers.base import DeserializationError
 else:
     from django.core.serializers.base import DeserializationError
 
-from deep_serialize.api import (BaseMetaWalkClass,
-                                WALKING_INTO_CLASS,
-                                WALKING_STOP)
+from deep_serialize.api import BaseMetaWalkClass, WALKING_INTO_CLASS, WALKING_STOP
 from deep_serialize.exceptions import DoesNotNaturalKeyException
 from deep_serialize.utils import has_natural_key, dumps
-
 
 logger = logging.getLogger(__name__)
 
@@ -148,16 +146,14 @@ class Serializer(object):
         options = options or {}
         walking_classes = walking_classes or []
         object_list = None
-        use_natural_primary_keys = False
-        use_natural_foreign_keys = False
         contents = cls.objects_to_serialize(obj, object_list,
                                             request=request,
                                             natural_keys=natural_keys,
                                             walking_classes=walking_classes,
                                             walking_always=walking_always)
         if natural_keys:
-            use_natural_primary_keys = True
-            use_natural_foreign_keys = True
+            options['use_natural_primary_keys'] = True
+            options['use_natural_foreign_keys'] = True
         contents_to_serialize = []
         with transaction.commit_manually():
             try:
@@ -173,13 +169,11 @@ class Serializer(object):
                     for field in content._meta.many_to_many:
                         walking_status = cls.walking_into_class(content, field.name, field.rel.to, walking_classes, walking_always)
                         if walking_status == WALKING_STOP:
-                            setattr(content, field.name, [])
+                            getattr(content, field.name).clear()
                     content_to_serialize = meta_walking_class.pre_serialize(obj, content, request, options)
                     if content_to_serialize:
                         contents_to_serialize.append(content_to_serialize)
                 fixtures = serializers.serialize(format, contents_to_serialize, indent=indent,
-                                                 use_natural_primary_keys=use_natural_primary_keys,
-                                                 use_natural_foreign_keys=use_natural_foreign_keys,
                                                  **options)
             finally:
                 transaction.rollback()

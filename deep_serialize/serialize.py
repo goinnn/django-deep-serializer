@@ -29,7 +29,11 @@ from django.db import transaction
 from django.utils import simplejson
 
 from deep_serialize.exceptions import DoesNotNaturalKeyException
-from deep_serialize.utils import has_natural_key
+from deep_serialize.utils import (has_natural_key,
+                                  dumps,
+                                  BaseMetaWalkClass,
+                                  WALKING_INTO_CLASS,
+                                  WALKING_STOP)
 
 logger = logging.getLogger('vpsites.editor')
 

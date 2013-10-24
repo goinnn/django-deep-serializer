@@ -33,15 +33,14 @@ if USE_INTERNAL_SERIALIZERS:
 else:
     from django.core.serializers.base import DeserializationError
 
-
+from deep_serialize.api import (BaseMetaWalkClass,
+                                WALKING_INTO_CLASS,
+                                WALKING_STOP)
 from deep_serialize.exceptions import DoesNotNaturalKeyException
-from deep_serialize.utils import (has_natural_key,
-                                  dumps,
-                                  BaseMetaWalkClass,
-                                  WALKING_INTO_CLASS,
-                                  WALKING_STOP)
+from deep_serialize.utils import has_natural_key, dumps
 
-logger = logging.getLogger('vpsites.editor')
+
+logger = logging.getLogger(__name__)
 
 
 def log_json(filename, json):

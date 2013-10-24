@@ -13,8 +13,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
+import json
+
+from django.core.serializers.json import DjangoJSONEncoder
 
 
 def has_natural_key(content):
     model = content.__class__
     return getattr(content, 'natural_key', None) and getattr(model.objects, 'get_by_natural_key', None)
+
+
+def dumps(fixtures_python):
+    return json.dumps(fixtures_python, cls=DjangoJSONEncoder, sort_keys=True)

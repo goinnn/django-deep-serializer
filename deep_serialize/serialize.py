@@ -23,14 +23,13 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.serializers.base import DeserializationError
-from django.core.serializers.json import DjangoJSONEncoder
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db import transaction
 from django.utils import simplejson
 
-from exceptions import DoesNotNaturalKeyException
-from utils import has_natural_key
+from deep_serialize.exceptions import DoesNotNaturalKeyException
+from deep_serialize.utils import has_natural_key
 
 logger = logging.getLogger('vpsites.editor')
 
@@ -303,67 +302,3 @@ class Serializer(object):
             ct = ContentType.objects.get(app_label=app_label, model=model)
             model_class = ct.model_class()
             model_class.objects.filter(pk__in=pks).delete()
-
-WALKING_STOP = 1
-ONLY_REFERENCE = 2
-WALKING_INTO_CLASS = 3
-
-
-class BaseMetaWalkClass(object):
-
-    @classmethod
-    def pre_serialize(cls, initial_obj, obj, request, options=None):
-        """
-            Given the root object, the current object the request and some option,
-            You can treatment the object before to serialize the object.
-            This funcion is used at the serialization process.
-        """
-        return obj
-
-    @classmethod
-    def walking_into_class(cls, obj, field_name, model):
-        """
-            Given the the current object, the relation name and the model to the relation,
-            You can determine if to walk into this model or not.
-            This funcion is used at the serialization process.
-        """
-        return WALKING_INTO_CLASS
-
-    @classmethod
-    def get_queryset_to_relation(cls, obj, field_name, queryset, request=None):
-        """
-            Given the the current object, the relation name and the model to the relation,
-            You can filter/exclude the result queryset
-            This funcion is used at the serialization process.
-        """
-        return queryset
-
-    @classmethod
-    def pretreatment_fixture(cls, initial_obj, obj_fix):
-        """
-            Given a dictionary (fixtures dictionary) you can treatment it,
-            before to deserialize the object.
-            This funcion is used at the deserialization process.
-        """
-        return obj_fix
-
-    @classmethod
-    def pre_save(cls, initial_obj, obj):
-        """
-            Given a obj you can treatment this before the save a object.
-            This funcion is used at the deserialization process.
-        """
-        pass
-
-    @classmethod
-    def post_save(cls, initial_obj, obj):
-        """
-            Given a saved obj you can treatment this after the save a object.
-            This is called after the every post_save signal
-            This funcion is used at the deserialization process.
-        """
-        pass
-
-
-def dumps(fixtures_python):
-    return simplejson.dumps(fixtures_python, cls=DjangoJSONEncoder, sort_keys=True)

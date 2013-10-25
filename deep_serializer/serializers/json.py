@@ -11,9 +11,9 @@ import decimal
 import json
 import sys
 
-from deep_serialize.serializers.base import DeserializationError
-from deep_serialize.serializers.python import Serializer as PythonSerializer
-from deep_serialize.serializers.python import Deserializer as PythonDeserializer
+from deep_serializer.serializers.base import DeserializationError
+from deep_serializer.serializers.python import Serializer as PythonSerializer
+from deep_serializer.serializers.python import Deserializer as PythonDeserializer
 from django.utils import six
 from django.utils.timezone import is_aware
 

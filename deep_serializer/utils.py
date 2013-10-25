@@ -15,10 +15,10 @@
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 import json
 
-from deep_serialize.settings import USE_INTERNAL_SERIALIZERS
+from deep_serializer.settings import USE_INTERNAL_SERIALIZERS
 
 if USE_INTERNAL_SERIALIZERS:
-    from deep_serialize.serializers.json import DjangoJSONEncoder
+    from deep_serializer.serializers.json import DjangoJSONEncoder
 else:
     from django.core.serializers.json import DjangoJSONEncoder
 

@@ -17,6 +17,7 @@
 import json
 import logging
 import os
+import sys
 
 from pprint import pprint
 from tempfile import gettempdir
@@ -28,16 +29,18 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db import transaction
 
-from deep_serialize.settings import USE_INTERNAL_SERIALIZERS
+from deep_serializer.settings import USE_INTERNAL_SERIALIZERS
 
 if USE_INTERNAL_SERIALIZERS:
-    from deep_serialize.serializers.base import DeserializationError
+    from deep_serializer.serializers.base import DeserializationError
 else:
     from django.core.serializers.base import DeserializationError
 
-from deep_serialize.api import BaseMetaWalkClass, WALKING_INTO_CLASS, WALKING_STOP
-from deep_serialize.exceptions import DoesNotNaturalKeyException
-from deep_serialize.utils import has_natural_key, dumps
+from deep_serializer.api import BaseMetaWalkClass, WALKING_INTO_CLASS, WALKING_STOP
+from deep_serializer.exceptions import DoesNotNaturalKeyException
+from deep_serializer.utils import has_natural_key, dumps
+
+PY3 = sys.version_info[0] == 3
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +221,7 @@ class Serializer(object):
                 cls.delete_contents(fixtures_python_deleted)
                 transaction.commit()
                 return contents
-            except Exception, e:
+            except Exception as e:
                 if settings.DEBUG:
                     import traceback
                     logger.error(traceback.format_exc())
@@ -262,7 +265,10 @@ class Serializer(object):
         while obj or init:
             init = False
             try:
-                obj = objects.next()
+                if PY3:
+                    obj = objects.__next__()
+                else:
+                    obj = objects.next()
                 i = i + 1
             except DeserializationError:
                 obj_does_not_exist = True

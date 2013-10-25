@@ -15,7 +15,7 @@
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from deep_serialize.api import (BaseMetaWalkClass, WALKING_STOP,
+from deep_serializer.api import (BaseMetaWalkClass, WALKING_STOP,
                                 ONLY_REFERENCE, WALKING_INTO_CLASS)
-from deep_serialize.serializer import Serializer
-from deep_serialize.utils import has_natural_key, dumps
+from deep_serializer.serializer import Serializer
+from deep_serializer.utils import has_natural_key, dumps

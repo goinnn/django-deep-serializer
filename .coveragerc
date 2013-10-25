@@ -1,5 +1,5 @@
 [run]
-source = ./deep_serializer
+source = deep_serializer
 omit =
     example/*
     deep_serializer/serializers/*

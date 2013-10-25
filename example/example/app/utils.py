@@ -15,7 +15,7 @@ walking_restore_classes = {WebSite: WebSiteRestore,
                            User: BaseMetaWalkClass}
 
 
-def serialize_website(website, clone=True):
+def serialize_website(website, clone=True, format='json'):
     if clone:
         walking_classes = walking_clone_classes
         natural_keys = True
@@ -24,12 +24,12 @@ def serialize_website(website, clone=True):
         natural_keys = False
     return Serializer.serialize(website, request=None,
                                 walking_classes=walking_classes,
-                                format='json',
+                                format=format,
                                 indent=4,
                                 natural_keys=natural_keys)
 
 
-def deserialize_website(website, fixtures, clone=True):
+def deserialize_website(website, fixtures, clone=True, format='json'):
     if clone:
         walking_classes = walking_clone_classes
         natural_keys = True
@@ -37,11 +37,11 @@ def deserialize_website(website, fixtures, clone=True):
         walking_classes = walking_restore_classes
         natural_keys = False
     return Serializer.deserialize(website, fixtures,
-                                  format='json',
+                                  format=format,
                                   walking_classes=walking_classes,
                                   natural_keys=natural_keys)
 
 
-def clone_website(website):
-    fixtures = serialize_website(website, clone=True)
-    return deserialize_website(website, fixtures, clone=True)
+def clone_website(website, format='json'):
+    fixtures = serialize_website(website, clone=True, format=format)
+    return deserialize_website(website, fixtures, clone=True, format=format)

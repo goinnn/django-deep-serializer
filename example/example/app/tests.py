@@ -14,7 +14,7 @@
 # along with this programe.  If not, see <http://www.gnu.org/licenses/>.
 import sys
 
-
+from django.conf import settings
 from django.test import TestCase
 from django.test.client import Client
 
@@ -32,7 +32,7 @@ class DeepSerializerTestCase(TestCase):
     def setUp(self):
         self.client = Client(enforce_csrf_checks=False)
 
-    def test_clone(self):
+    def __test_clone(self):
         websites = list(WebSite.objects.all())
         pages = list(Page.objects.all())
         website = WebSite.objects.get(pk=1)
@@ -62,3 +62,13 @@ class DeepSerializerTestCase(TestCase):
         self.assertEqual(Page.objects.all().count(), len(pages))
         self.assertEqual(objs[0].title, "My website")
         self.assertEqual(objs[0].slug, "my-website")
+
+    def test_restore_without_internal_modules(self):
+        serialization_modules = settings.SERIALIZATION_MODULES
+        settings.SERIALIZATION_MODULES = {}
+        self.test_restore()
+        settings.SERIALIZATION_MODULES = serialization_modules
+
+    def test_serialize_xml(self):
+        website = WebSite.objects.get(pk=1)
+        serialize_website(website, clone=False, format='xml')

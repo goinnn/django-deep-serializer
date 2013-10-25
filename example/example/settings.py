@@ -179,12 +179,12 @@ LOGGING = {
     }
 }
 
-USE_INTERNAL_SERIALIZERS = True
 
 SERIALIZATION_MODULES = {
     "xml"    : "deep_serializer.serializers.xml_serializer",
     "python" : "deep_serializer.serializers.python",
     "json"   : "deep_serializer.serializers.json",
+    #"yaml"   : "deep_serializer.serializers.pyyaml",
 }
 
 CACHES = {

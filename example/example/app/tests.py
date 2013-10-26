@@ -35,7 +35,7 @@ class DeepSerializerTestCase(TestCase):
     def setUp(self):
         self.client = Client(enforce_csrf_checks=False)
 
-    def __test_clone(self):
+    def test_clone(self):
         websites = list(WebSite.objects.all())
         pages = list(Page.objects.all())
         website = WebSite.objects.get(pk=1)
@@ -51,7 +51,7 @@ class DeepSerializerTestCase(TestCase):
             else:
                 self.assertRaises(ValueError)
 
-    def __test_restore(self, action='restore'):
+    def test_restore(self, action='restore'):
         websites = list(WebSite.objects.all())
         pages = list(Page.objects.all())
         website = WebSite.objects.get(pk=1)
@@ -70,16 +70,16 @@ class DeepSerializerTestCase(TestCase):
         self.assertEqual(db_website.title, "My website")
         self.assertEqual(db_website.slug, "my-website")
 
-    def __test_restore_without_internal_modules(self):
+    def test_restore_without_internal_modules(self):
         serialization_modules = settings.SERIALIZATION_MODULES
         settings.SERIALIZATION_MODULES = {}
         self.test_restore()
         settings.SERIALIZATION_MODULES = serialization_modules
 
-    def __test_restore_natural_keys(self):
+    def test_restore_natural_keys(self):
         self.test_restore(action='restore-natural-keys')
 
-    def __test_serialize_xml(self):
+    def test_serialize_xml(self):
         website = WebSite.objects.get(pk=1)
         serialize_website(website, action='restore', format='xml')
 

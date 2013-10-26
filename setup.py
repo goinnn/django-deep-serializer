@@ -63,7 +63,7 @@ setup(
     version="0.0.1",
     author="Pablo Martin",
     author_email="goinnn@gmail.com",
-    description="Serialize an object and its relations through class definitions",
+    description="Serialize/Deserialize an object and its relations through class definitions",
     long_description=(read('README.rst') + '\n\n' + read('CHANGES.rst')),
     url='https://github.com/goinnn/django-deep-serializer',
     classifiers=[

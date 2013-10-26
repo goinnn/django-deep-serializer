@@ -31,9 +31,12 @@ class WebSite(models.Model):
     is_active = models.BooleanField(verbose_name=_('Is active?'), db_index=True, default=True)
     original_website = models.ForeignKey('self', related_name='websites_created_of',
                                          verbose_name=_('Original WebSite'),
-                                         null=True, blank=True)
+                                         null=True, blank=True,
+                                         on_delete=models.SET_NULL)
     initial_page = models.OneToOneField('Page', related_name='website_initial_page',
-                                        verbose_name=_('Initial Page'), null=True, blank=True)
+                                        verbose_name=_('Initial Page'),
+                                        null=True, blank=True,
+                                        on_delete=models.SET_NULL)
     creation_date = models.DateTimeField(verbose_name=_('Creation date'), auto_now_add=True)
     modification_date = models.DateTimeField(verbose_name=_('Last Modification date'), auto_now=True)
     objects = WebSiteManager()
@@ -60,7 +63,8 @@ class Page(models.Model):
     html_code = models.TextField(verbose_name=_('HTML code'), blank=True)
     website = models.ForeignKey(WebSite, verbose_name=_('WebSite'))
     created_from = models.ForeignKey('self', related_name='pages_created_of',
-                                     verbose_name=_('Created from'), null=True, blank=True)
+                                     verbose_name=_('Created from'), null=True, blank=True,
+                                     on_delete=models.SET_NULL)
     creation_date = models.DateTimeField(verbose_name=_('Creation date'), auto_now_add=True)
     modification_date = models.DateTimeField(verbose_name=_('Last Modification date'), auto_now=True)
 

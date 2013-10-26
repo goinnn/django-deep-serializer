@@ -167,9 +167,13 @@ class Serializer(object):
                         if hasattr(field.rel, 'to'):
                             walking_status = cls.walking_into_class(content, field.name, field.rel.to, walking_classes, walking_always)
                             if walking_status == WALKING_STOP:
+                                field_null = field.null
+                                field_blank = field.blank
                                 field.null = True
                                 field.blank = True
                                 setattr(content, field.name, None)
+                                field.null = field_null
+                                field.blank = field_blank
                     for field in content._meta.many_to_many:
                         walking_status = cls.walking_into_class(content, field.name, field.rel.to, walking_classes, walking_always)
                         if walking_status == WALKING_STOP:

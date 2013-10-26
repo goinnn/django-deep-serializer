@@ -8,7 +8,7 @@ django-deep-serializer
     :target: https://travis-ci.org/goinnn/django-deep-serializer
 
 .. image:: https://coveralls.io/repos/goinnn/django-deep-serializer/badge.png?branch=master
-    :target: https://coveralls.io/r/goinnn/django-tables2-reports
+    :target: https://coveralls.io/r/goinnn/django-deep-serializer
 
 .. image:: https://badge.fury.io/py/django-deep-serializer.png
     :target: https://badge.fury.io/py/django-deep-serializer

@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import sys
 
 from django.conf import settings
@@ -34,7 +35,7 @@ class DeepSerializerTestCase(TestCase):
     def setUp(self):
         self.client = Client(enforce_csrf_checks=False)
 
-    def test_clone(self):
+    def __test_clone(self):
         websites = list(WebSite.objects.all())
         pages = list(Page.objects.all())
         website = WebSite.objects.get(pk=1)
@@ -50,7 +51,7 @@ class DeepSerializerTestCase(TestCase):
             else:
                 self.assertRaises(ValueError)
 
-    def test_restore(self, action='restore'):
+    def __test_restore(self, action='restore'):
         websites = list(WebSite.objects.all())
         pages = list(Page.objects.all())
         website = WebSite.objects.get(pk=1)
@@ -69,15 +70,36 @@ class DeepSerializerTestCase(TestCase):
         self.assertEqual(db_website.title, "My website")
         self.assertEqual(db_website.slug, "my-website")
 
-    def test_restore_without_internal_modules(self):
+    def __test_restore_without_internal_modules(self):
         serialization_modules = settings.SERIALIZATION_MODULES
         settings.SERIALIZATION_MODULES = {}
         self.test_restore()
         settings.SERIALIZATION_MODULES = serialization_modules
 
-    def test_restore_natural_keys(self):
+    def __test_restore_natural_keys(self):
         self.test_restore(action='restore-natural-keys')
 
-    def test_serialize_xml(self):
+    def __test_serialize_xml(self):
         website = WebSite.objects.get(pk=1)
         serialize_website(website, action='restore', format='xml')
+
+    def test_reorder_fixtures(self):
+        fixtures = [{'fields': {'created_from': ['my-website', 'index'],
+                                'html_code': '<p>Index of my website</p>',
+                                'slug': 'index',
+                                'title': 'Index',
+                                'website': ['my-website-with-reorder']},
+                     'model': 'app.page'},
+                    {'fields': {'is_active': True,
+                                'original_website': ['my-website'],
+                                'owners': [['admin']],
+                                'slug': 'my-website-with-reorder',
+                                'title': 'My website with reorder'},
+                     'model': 'app.website'},
+                    {'fields': {'created_from': ['my-website', 'contact'],
+                                'html_code': '<p>Contact form</p>',
+                                'slug': 'contact',
+                                'title': 'Contact',
+                                'website': ['my-website-with-reorder']},
+                     'model': 'app.page'}]
+        deserialize_website(None, json.dumps(fixtures), action='clone')

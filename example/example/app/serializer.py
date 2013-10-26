@@ -32,6 +32,7 @@ class MyMetaWalkClass(BaseMetaWalkClass):
 
     @classmethod
     def pre_save(cls, initial_obj, obj):
+        super(MyMetaWalkClass, cls).pre_save(initial_obj, obj)
         now = datetime.datetime.now()
         if not obj.creation_date:
             obj.creation_date = now

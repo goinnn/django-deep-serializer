@@ -19,6 +19,10 @@ from django.conf import settings
 serialization_modules = getattr(settings, 'SERIALIZATION_MODULES', False)
 
 if serialization_modules and isinstance(serialization_modules, dict):
-    USE_INTERNAL_SERIALIZERS = "deep_serializer".startswith(tuple(serialization_modules.values()))
+    for serializer in serialization_modules.values():
+        if serializer.startswith('deep_serializer.'):
+            USE_INTERNAL_SERIALIZERS = True
+        else:
+            USE_INTERNAL_SERIALIZERS = False
 else:
     USE_INTERNAL_SERIALIZERS = False

@@ -279,17 +279,23 @@ class Serializer(object):
                 break
             except StopIteration:
                 break
-            natural_key = '%s__%s__%s' % (obj.object._meta.app_label,
+            if natural_keys:
+                if not has_natural_key(obj.object):
+                    raise DoesNotNaturalKeyException("The model %s don't have a natural key" % obj.object.__class__)
+                obj_key = '%s__%s__%s' % (obj.object._meta.app_label,
                                           obj.object._meta.module_name,
                                           obj.object.natural_key())
-
-            if not natural_key in exclude_contents:
+            else:
+                obj_key = '%s__%s__%s' % (obj.object._meta.app_label,
+                                          obj.object._meta.module_name,
+                                          obj.object.pk)
+            if not obj_key in exclude_contents:
                 meta_walking_class = cls.get_meta_walking_class(obj.object.__class__, walking_classes)
                 meta_walking_class.pre_save(initial_obj, obj.object)
                 obj.save(using=using)
                 meta_walking_class.post_save(initial_obj, obj.object)
                 contents.append(obj.object)
-                exclude_contents.append(natural_key)
+                exclude_contents.append(obj_key)
         if obj_does_not_exist:
             fixtures_python = json.loads(fixtures)
             fix_obj = fixtures_python[i]

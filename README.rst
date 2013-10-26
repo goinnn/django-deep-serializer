@@ -27,7 +27,7 @@ Requeriments
 Installation
 ============
 
-* If you want use natural keys, you have use the `internal serializers <https://github.com/goinnn/django-deep-serializer/commit/35190702bbd00324a1bb526a2aa842405e241bd3>`_ These are get from django git repository. These are not in the never stable branch or release. You have to write in your settings:
+If you want use natural keys, you have use the `internal serializers <https://github.com/goinnn/django-deep-serializer/commit/35190702bbd00324a1bb526a2aa842405e241bd3>`_ These are got from django git repository. These are not in the any stable branch or release. You have to write in your settings:
 
 ::
 
@@ -53,6 +53,7 @@ The idea is get to have a serializer and a deserializer that this allow define s
 There are three examples in the `example project <https://github.com/goinnn/django-deep-serializer/blob/master/example/example/app/serializer.py>`_. E.g.:
 
 ::
+
     class WebSiteClone(MyMetaWalkClass):
 
         @classmethod

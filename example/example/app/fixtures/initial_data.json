@@ -53,12 +53,12 @@
         "is_active": true, 
         "is_superuser": true, 
         "is_staff": true, 
-        "last_login": "2011-02-17 10:56:03", 
+        "last_login": "2013-02-17T08:04:29.582Z", 
         "groups": [], 
         "user_permissions": [],
         "password": "sha1$1ad04$868abf5737e05d3b68f5cb972fda1e227cc4f7d7", 
         "email": "", 
-        "date_joined": "2011-02-17 10:56:03"
+        "date_joined": "2013-02-17T08:04:29.582Z"
     }
 }
 ]

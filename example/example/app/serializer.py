@@ -18,6 +18,8 @@ import datetime
 import uuid
 import time
 
+from django.utils.timezone import utc
+
 from deep_serializer import (BaseMetaWalkClass, WALKING_STOP,
                              WALKING_INTO_CLASS, ONLY_REFERENCE)
 
@@ -36,7 +38,7 @@ class MyMetaWalkClass(BaseMetaWalkClass):
     @classmethod
     def pre_save(cls, initial_obj, obj):
         super(MyMetaWalkClass, cls).pre_save(initial_obj, obj)
-        now = datetime.datetime.now()
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
         if not obj.creation_date:
             obj.creation_date = now
         if not obj.modification_date:
@@ -130,6 +132,7 @@ class UserClone(BaseMetaWalkClass):
         obj = super(UserClone, cls).pre_serialize(initial_obj, obj,
                                                   request, options=options)
         obj.date_joined = None
+        obj.last_login = None
         obj.username = get_hash()
         obj.email = 'xxx@example.com'
         return obj
@@ -137,8 +140,11 @@ class UserClone(BaseMetaWalkClass):
     @classmethod
     def pre_save(cls, initial_obj, obj):
         super(UserClone, cls).pre_save(initial_obj, obj)
+        now = datetime.datetime.utcnow().replace(tzinfo=utc)
         if obj.date_joined is None:
-            obj.date_joined = datetime.datetime.now()
+            obj.date_joined = now
+        if obj.last_login is None:
+            obj.last_login = now
 
     @classmethod
     def post_save(cls, initial_obj, obj):

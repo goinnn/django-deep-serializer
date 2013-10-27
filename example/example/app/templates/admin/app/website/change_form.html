@@ -3,6 +3,7 @@
 {% load i18n %}
 
 {% block object-tools-items %}
-    <li><a href="clone/" class="clonelink">{% trans "Clone" %}</a></li>
+    <li><a href="clone/" class="clonelink">{% trans "Clone Website" %}</a></li>
+    <li><a href="clone/with-owners/" class="clonelink">{% trans "Clone Website and its owners" %}</a></li>
     {{ block.super }}
 {% endblock %}

@@ -19,13 +19,17 @@ from django.contrib.auth.models import User
 from deep_serializer import Serializer, BaseMetaWalkClass
 
 from example.app.models import WebSite, Page
-from example.app.serializer import (WebSiteClone, PageClone,
+from example.app.serializer import (WebSiteClone, PageClone, UserClone, WebSiteOwnersClone,
                                     WebSiteRestore, PageRestore,
                                     WebSiteRestoreNaturalKey, PageRestoreNaturalKey)
 
 walking_clone_classes = {WebSite: WebSiteClone,
                          Page: PageClone,
                          User: BaseMetaWalkClass}
+
+walking_clone_owners_classes = {WebSite: WebSiteOwnersClone,
+                                Page: PageClone,
+                                User: UserClone}
 
 walking_restore_classes = {WebSite: WebSiteRestore,
                            Page: PageRestore,
@@ -36,9 +40,12 @@ walking_restore_classes_natural = {WebSite: WebSiteRestoreNaturalKey,
                                    User: BaseMetaWalkClass}
 
 
-def serialize_website(website, action='clone', format='json'):
+def get_params_to_serialize_deserialize(action):
     if action == 'clone':
         walking_classes = walking_clone_classes
+        natural_keys = True
+    elif action == 'clone-with-owners':
+        walking_classes = walking_clone_owners_classes
         natural_keys = True
     elif action == 'restore':
         walking_classes = walking_restore_classes
@@ -46,6 +53,11 @@ def serialize_website(website, action='clone', format='json'):
     elif action == 'restore-natural-keys':
         walking_classes = walking_restore_classes_natural
         natural_keys = True
+    return (walking_classes, natural_keys)
+
+
+def serialize_website(website, action='clone', format='json'):
+    walking_classes, natural_keys = get_params_to_serialize_deserialize(action)
     return Serializer.serialize(website, request=None,
                                 walking_classes=walking_classes,
                                 format=format,
@@ -54,22 +66,13 @@ def serialize_website(website, action='clone', format='json'):
 
 
 def deserialize_website(website, fixtures, action='clone', format='json'):
-    if action == 'clone':
-        walking_classes = walking_clone_classes
-        natural_keys = True
-    elif action == 'restore':
-        walking_classes = walking_restore_classes
-        natural_keys = False
-    elif action == 'restore-natural-keys':
-        walking_classes = walking_restore_classes_natural
-        natural_keys = True
+    walking_classes, natural_keys = get_params_to_serialize_deserialize(action)
     return Serializer.deserialize(website, fixtures,
                                   format=format,
                                   walking_classes=walking_classes,
                                   natural_keys=natural_keys)
 
 
-def clone_website(website, format='python'):
-    action = 'clone'
+def clone_website(website, action='clone', format='python'):
     fixtures = serialize_website(website, action=action, format=format)
     return deserialize_website(website, fixtures, action=action, format=format)

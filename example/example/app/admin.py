@@ -44,13 +44,22 @@ class WebSiteAdmin(admin.ModelAdmin):
             url(r'^(.+)/clone/$',
                 wrap(self.clone_website),
                 name='clone_website'),
+            url(r'^(.+)/clone/with-owners/$',
+                wrap(self.clone_website_with_users),
+                name='clone_website'),
         ) + urlpatterns
         return urlpatterns
 
-    def clone_website(self, request, object_id, form_url='', extra_context=None):
+    def clone_website(self, request, object_id, form_url='', extra_context=None, action='clone'):
         website = get_object_or_404(WebSite, pk=object_id)
-        objs = clone_website(website)
+        objs = clone_website(website, action=action)
         return HttpResponseRedirect(reverse('admin:app_website_change', args=(objs[0].pk,)))
+
+    def clone_website_with_users(self, request, object_id, form_url='', extra_context=None):
+        return self.clone_website(request, object_id,
+                                  form_url=form_url,
+                                  extra_context=extra_context,
+                                  action='clone-with-owners')
 
 
 class PageAdmin(admin.ModelAdmin):

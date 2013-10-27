@@ -42,7 +42,7 @@ class MyMetaWalkClass(BaseMetaWalkClass):
 ## Example 1: Clone an WebSite
 
 
-def hash_slug():
+def get_hash():
     return ''.join(str(uuid.uuid4()).split('-'))
 
 
@@ -53,7 +53,7 @@ class WebSiteClone(MyMetaWalkClass):
         obj = super(WebSiteClone, cls).pre_serialize(initial_obj, obj, request, options=options)
         new_title = '%s-%s' % (obj.title, time.time())
         obj.title = new_title[:200]
-        obj.slug = hash_slug()
+        obj.slug = get_hash()
         obj.original_website_id = obj.pk
         obj.initial_page = None
         return obj
@@ -94,7 +94,54 @@ class PageClone(MyMetaWalkClass):
 
 ## End example 1
 
-## Example 2: Restore a website using primary keys
+
+## Example 2: Clone an WebSite and also clone the owners
+
+
+class WebSiteOwnersClone(WebSiteClone):
+
+    @classmethod
+    def walking_into_class(cls, obj, field_name, model):
+        if field_name in ('initial_page', 'websites_created_of'):
+            return WALKING_STOP
+        elif field_name in ('original_website'):
+            return ONLY_REFERENCE
+        return WALKING_INTO_CLASS
+
+    @classmethod
+    def pre_serialize(cls, initial_obj, obj, request, options=None):
+        obj = super(WebSiteOwnersClone, cls).pre_serialize(initial_obj, obj, request, options=options)
+        obj.owners = []
+        return obj
+
+
+class UserClone(BaseMetaWalkClass):
+
+    @classmethod
+    def pre_serialize(cls, initial_obj, obj, request, options=None):
+        obj = super(UserClone, cls).pre_serialize(initial_obj, obj, request, options=options)
+        obj.date_joined = None
+        obj.username = get_hash()
+        obj.email = 'xxx@example.com'
+        return obj
+
+    @classmethod
+    def pre_save(cls, initial_obj, obj):
+        super(UserClone, cls).pre_save(initial_obj, obj)
+        if obj.date_joined is None:
+            obj.date_joined = datetime.datetime.now()
+
+    @classmethod
+    def post_save(cls, initial_obj, obj):
+        super(UserClone, cls).post_save(initial_obj, obj)
+        db_website = initial_obj.__class__.objects.get(slug=initial_obj.slug)
+        db_website.owners.add(obj)
+
+
+## End example 2
+
+
+## Example 3: Restore a website using primary keys
 
 
 class WebSiteRestore(MyMetaWalkClass):
@@ -118,9 +165,9 @@ class PageRestore(MyMetaWalkClass):
             return ONLY_REFERENCE
         return WALKING_INTO_CLASS
 
-## End example 2
+## End example 3
 
-## Example 3: Restore a website using natural keys
+## Example 4: Restore a website using natural keys
 
 
 class WebSiteRestoreNaturalKey(MyMetaWalkClass):
@@ -157,4 +204,4 @@ class PageRestoreNaturalKey(MyMetaWalkClass):
             obj.website.initial_page = obj
             obj.website.save()
 
-## End example 3
+## End example 4

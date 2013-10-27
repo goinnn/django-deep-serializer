@@ -35,13 +35,13 @@ class DeepSerializerTestCase(TestCase):
     def setUp(self):
         self.client = Client(enforce_csrf_checks=False)
 
-    # Test type 1:
+    # Test type 1: Clone website
 
-    def test_clone(self, format='json'):
+    def test_clone(self, action='clone', format='json'):
         websites = list(WebSite.objects.all())
         pages = list(Page.objects.all())
         website = WebSite.objects.get(pk=1)
-        objs = clone_website(website, format=format)
+        objs = clone_website(website, action=action, format=format)
         self.assertEqual(WebSite.objects.all().count(), len(websites) * 2)
         self.assertEqual(Page.objects.all().count(), len(pages) * 2)
         for new_obj in objs:
@@ -62,7 +62,21 @@ class DeepSerializerTestCase(TestCase):
     def test_clone_yaml(self):
         self.test_clone(format='yaml')
 
-    # Test type 2:
+    # Test type 2: Clone website with owners
+
+    def test_clone_with_owners(self, format='json'):
+        self.test_clone(action='clone-with-owners', format=format)
+
+    def test_clone_with_owners_xml(self):
+        self.test_clone_with_owners(format='xml')
+
+    def test_clone_with_owners_python(self):
+        self.test_clone_with_owners(format='python')
+
+    def test_clone_with_owners_yaml(self):
+        self.test_clone_with_owners(format='yaml')
+
+    # Test type 3: Restore website
 
     def test_restore(self, action='restore', format='json'):
         websites = list(WebSite.objects.all())
@@ -92,7 +106,7 @@ class DeepSerializerTestCase(TestCase):
     def test_restore_yaml(self):
         self.test_restore(action='restore', format='yaml')
 
-    # Test type 3:
+    # Test type 4: Restore website without internal serializers
 
     def test_restore_without_internal_modules(self, format='json'):
         serialization_modules = settings.SERIALIZATION_MODULES
@@ -109,7 +123,7 @@ class DeepSerializerTestCase(TestCase):
     def test_restore_without_internal_modules_yaml(self):
         self.test_restore_without_internal_modules(format='yaml')
 
-    # Test type 4:
+    # Test type 5: Restore website using natural keys
 
     def test_restore_natural_keys(self, format='json'):
         self.test_restore(action='restore-natural-keys')
@@ -123,7 +137,7 @@ class DeepSerializerTestCase(TestCase):
     def test_restore_natural_keys_yaml(self):
         self.test_restore(action='restore-natural-keys', format='yaml')
 
-    # Test type 5:
+    # Test type 5: Test reorder fixtures
 
     def test_reorder_json_fixtures(self):
         fixtures = [{'fields': {'created_from': ['my-website', 'index'],

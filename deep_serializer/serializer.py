@@ -16,11 +16,7 @@
 
 import json
 import logging
-import os
 import sys
-
-from pprint import pprint
-from tempfile import gettempdir
 
 from django.conf import settings
 from django.core import serializers
@@ -42,13 +38,6 @@ from deep_serializer.utils import has_natural_key, dumps, findnth
 PY3 = sys.version_info[0] == 3
 
 logger = logging.getLogger(__name__)
-
-
-def log_json(filename, json):
-    tmpdir = gettempdir()
-    log = open(os.path.join(tmpdir, filename), 'w')
-    pprint(json, log)
-    log.close()
 
 
 class Serializer(object):

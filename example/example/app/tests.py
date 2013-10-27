@@ -19,7 +19,8 @@ import sys
 
 from django.conf import settings
 from django.test import TestCase
-from django.test.client import Client
+
+from deep_serializer.serializers.base import DeserializationError
 
 from example.app.models import WebSite, Page
 from example.app.utils import clone_website, serialize_website, deserialize_website
@@ -31,9 +32,6 @@ else:
 
 
 class DeepSerializerTestCase(TestCase):
-
-    def setUp(self):
-        self.client = Client(enforce_csrf_checks=False)
 
     # Test type 1: Clone website
 
@@ -139,28 +137,29 @@ class DeepSerializerTestCase(TestCase):
 
     # Test type 5: Test reorder fixtures
 
-    def test_reorder_json_fixtures(self):
-        fixtures = [{'fields': {'created_from': ['my-website', 'index'],
-                                'html_code': '<p>Index of my website</p>',
-                                'slug': 'index',
-                                'title': 'Index',
-                                'website': ['my-website-with-reorder'],
-                                'last_editor': ['admin']},
-                     'model': 'app.page'},
-                    {'fields': {'created_from': ['my-website', 'contact'],
-                                'html_code': '<p>Contact form</p>',
-                                'slug': 'contact',
-                                'title': 'Contact',
-                                'website': ['my-website-with-reorder'],
-                                'last_editor': ['admin']},
-                     'model': 'app.page'},
-                    {'fields': {'is_active': True,
-                                'original_website': ['my-website'],
-                                'owners': [['admin']],
-                                'slug': 'my-website-with-reorder',
-                                'title': 'My website with reorder'},
-                     'model': 'app.website'}]
-        deserialize_website(None, json.dumps(fixtures), action='clone')
+    def test_reorder_fixtures(self, fixtures=None, format='json'):
+        fixtures = fixtures or \
+            json.dumps([{'fields': {'created_from': ['my-website', 'index'],
+                                    'html_code': '<p>Index of my website</p>',
+                                    'slug': 'index',
+                                    'title': 'Index',
+                                    'website': ['my-website-with-reorder'],
+                                    'last_editor': ['admin']},
+                         'model': 'app.page'},
+                        {'fields': {'created_from': ['my-website', 'contact'],
+                                    'html_code': '<p>Contact form</p>',
+                                    'slug': 'contact',
+                                    'title': 'Contact',
+                                    'website': ['my-website-with-reorder'],
+                                    'last_editor': ['admin']},
+                         'model': 'app.page'},
+                        {'fields': {'is_active': True,
+                                    'original_website': ['my-website'],
+                                    'owners': [['admin']],
+                                    'slug': 'my-website-with-reorder',
+                                    'title': 'My website with reorder'},
+                         'model': 'app.website'}])
+        deserialize_website(None, fixtures, action='clone', format=format)
 
     def test_reorder_xml_fixtures(self):
         fixtures = """<?xml version="1.0" encoding="utf-8"?>
@@ -197,7 +196,7 @@ class DeepSerializerTestCase(TestCase):
             </object>
         </django-objects>
         """
-        deserialize_website(None, fixtures, action='clone', format='xml')
+        self.test_reorder_fixtures(fixtures, format='xml')
 
     def test_reorder_python_fixtures(self):
         fixtures = [{'fields': {'created_from': ['my-website', 'index'],
@@ -220,7 +219,7 @@ class DeepSerializerTestCase(TestCase):
                                 'slug': 'my-website-with-reorder-python',
                                 'title': 'My website with reorder python'},
                      'model': 'app.website'}]
-        deserialize_website(None, fixtures, action='clone', format='python')
+        self.test_reorder_fixtures(fixtures, format='python')
 
     def test_reorder_yaml_fixtures(self):
         if not "yaml" in settings.SERIALIZATION_MODULES:
@@ -258,4 +257,131 @@ class DeepSerializerTestCase(TestCase):
                 title: My website with reorder yaml
             model: app.website
         """
-        deserialize_website(None, fixtures, action='clone', format='yaml')
+        self.test_reorder_fixtures(fixtures, format='yaml')
+
+    # Test type 6: Test error reordering fixtures
+
+    def test_error_reorder_fixtures(self, fixtures=None, format='json'):
+        fixtures = fixtures or json.dumps([{'fields': {'created_from': ['my-website', 'index'],
+                                                       'html_code': '<p>Index of my website</p>',
+                                                       'slug': 'index',
+                                                       'title': 'Index',
+                                                       'website': ['my-website-with-reorder2'],
+                                                       'last_editor': ['admin']},
+                                            'model': 'app.page'},
+                                           {'fields': {'created_from': ['my-website', 'contact'],
+                                                       'html_code': '<p>Contact form</p>',
+                                                       'slug': 'contact',
+                                                       'title': 'Contact',
+                                                       'website': ['my-website-with-reorder2'],
+                                                       'last_editor': ['admin']},
+                                            'model': 'app.page'},
+                                           {'fields': {'is_active': True,
+                                                       'original_website': ['my-website'],
+                                                       'owners': [['admin']],
+                                                       'slug': 'my-website-with-reorder',
+                                                       'title': 'My website with reorder'},
+                                            'model': 'app.website'}])
+        try:
+            self.test_reorder_fixtures(fixtures, format=format)
+        except DeserializationError:
+            return
+        raise ValueError
+
+    def test_error_reorder_python_fixtures(self):
+        fixtures = [{'fields': {'created_from': ['my-website', 'index'],
+                                'html_code': '<p>Index of my website</p>',
+                                'slug': 'index',
+                                'title': 'Index',
+                                'website': ['my-website-with-reorder-python2'],
+                                'last_editor': ['admin']},
+                     'model': 'app.page'},
+                    {'fields': {'created_from': ['my-website', 'contact'],
+                                'html_code': '<p>Contact form</p>',
+                                'slug': 'contact',
+                                'title': 'Contact',
+                                'website': ['my-website-with-reorder-python2'],
+                                'last_editor': ['admin']},
+                     'model': 'app.page'},
+                    {'fields': {'is_active': True,
+                                'original_website': ['my-website'],
+                                'owners': [['admin']],
+                                'slug': 'my-website-with-reorder-python',
+                                'title': 'My website with reorder python'},
+                     'model': 'app.website'}]
+        self.test_error_reorder_fixtures(fixtures, format='python')
+
+    def test_error_reorder_yaml_fixtures(self):
+        if not "yaml" in settings.SERIALIZATION_MODULES:
+            return
+        fixtures = """
+        -   fields:
+                created_from: [my-website, index]
+                creation_date: null
+                html_code: <p>Index of my website</p>
+                modification_date: null
+                slug: index
+                title: Index
+                website: [my-website-with-reorder-yaml2]
+                last_editor: [admin]
+            model: app.page
+        -   fields:
+                created_from: [my-website, contact]
+                creation_date: null
+                html_code: <p>Contact form</p>
+                modification_date: null
+                slug: contact
+                title: Contact
+                website: [my-website-with-reorder-yaml2]
+                last_editor: [admin]
+            model: app.page
+        -   fields:
+                creation_date: null
+                initial_page: null
+                is_active: true
+                modification_date: null
+                original_website: [my-website]
+                owners:
+                - [admin]
+                slug: my-website-with-reorder-yaml
+                title: My website with reorder yaml
+            model: app.website
+        """
+        self.test_error_reorder_fixtures(fixtures, format='yaml')
+
+    def test_error_reorder_xml_fixtures(self):
+        fixtures = """<?xml version="1.0" encoding="utf-8"?>
+        <django-objects version="1.0">
+            <object model="app.page">
+                <field type="CharField" name="title">Index</field>
+                <field type="SlugField" name="slug">index</field>
+                <field type="TextField" name="html_code">&lt;p&gt;Index of my website&lt;/p&gt;</field>
+                <field to="app.website" name="website" rel="ManyToOneRel"><natural>my-website-with-reorder-xml2</natural></field>
+                <field to="app.page" name="created_from" rel="ManyToOneRel"><natural>my-website</natural><natural>index</natural></field>
+                <field type="DateTimeField" name="creation_date"><None></None></field>
+                <field type="DateTimeField" name="modification_date"><None></None></field>
+                <field type="ForeignKey" name="last_editor"><natural>admin</natural></field>
+            </object>
+            <object model="app.page">
+                <field type="CharField" name="title">Contact</field>
+                <field type="SlugField" name="slug">contact</field>
+                <field type="TextField" name="html_code">&lt;p&gt;Contact form&lt;/p&gt;</field>
+                <field to="app.website" name="website" rel="ManyToOneRel"><natural>my-website-with-reorder-xml2</natural></field>
+                <field to="app.page" name="created_from" rel="ManyToOneRel"><natural>my-website</natural><natural>contact</natural></field>
+                <field type="DateTimeField" name="creation_date"><None></None></field>
+                <field type="DateTimeField" name="modification_date"><None></None></field>
+                <field type="ForeignKey" name="last_editor"><natural>admin</natural></field>
+            </object>
+            <object model="app.website">
+                <field type="CharField" name="title">My website with reorder XML</field>
+                <field type="SlugField" name="slug">my-website-with-reorder-xml</field>
+                <field type="BooleanField" name="is_active">True</field>
+                <field to="app.website" name="original_website" rel="ManyToOneRel"><natural>my-website</natural></field>
+                <field to="app.page" name="initial_page" rel="OneToOneRel"><None></None></field>
+                <field type="DateTimeField" name="creation_date"><None></None></field>
+                <field type="DateTimeField" name="modification_date"><None></None></field>
+                <field to="auth.user" name="owners" rel="ManyToManyRel"><object><natural>admin</natural></object></field>
+            </object>
+        </django-objects>
+        """
+        self.test_error_reorder_fixtures(fixtures, format='xml')

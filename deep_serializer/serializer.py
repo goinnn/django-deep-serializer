@@ -199,17 +199,8 @@ class Serializer(object):
     @classmethod
     def _deserialize(cls, initial_obj, fixtures, format='json',
                      walking_classes=None, using='default',
-                     natural_keys=True,
-                     exclude_contents=None, contents=None):
-        return cls.deserialize_step(initial_obj, fixtures,
-                                    format=format, walking_classes=walking_classes, using=using,
-                                    natural_keys=natural_keys,
-                                    exclude_contents=exclude_contents, contents=contents)
-
-    @classmethod
-    def deserialize_step(cls, initial_obj, fixtures, format='json',
-                         walking_classes=None, using='default',
-                         natural_keys=True, exclude_contents=None, contents=None):
+                     natural_keys=True, exclude_contents=None,
+                     contents=None, num_reorder=0):
         objects = serializers.deserialize(format, fixtures, using=using,
                                           use_natural_primary_keys=natural_keys,
                                           use_natural_foreign_keys=natural_keys)
@@ -218,7 +209,7 @@ class Serializer(object):
         init = True
         obj_does_not_exist = False
         obj = None
-        i = 0
+        num_item = 0
         while obj or init:
             init = False
             try:
@@ -226,7 +217,7 @@ class Serializer(object):
                     obj = objects.__next__()
                 else:
                     obj = objects.next()
-                i = i + 1
+                num_item = num_item + 1
             except (DeserializationError, ObjectDoesNotExist):
                 obj_does_not_exist = True
                 break
@@ -250,48 +241,60 @@ class Serializer(object):
                 contents.append(obj.object)
                 exclude_contents.append(obj_key)
         if obj_does_not_exist:
-            fixtures = getattr(cls, 'deserialize_reorder_%s' % format)(fixtures, i)
+            num_reorder = num_reorder + 1
+            fixtures = getattr(cls, 'deserialize_reorder_%s' % format)(fixtures, num_item, num_reorder)
             cls._deserialize(initial_obj, fixtures, format=format,
                              walking_classes=walking_classes,
                              natural_keys=natural_keys,
                              exclude_contents=exclude_contents,
-                             contents=contents)
+                             contents=contents,
+                             num_reorder=num_reorder)
         return contents
 
     @classmethod
-    def deserialize_reorder_python(cls, fixtures, i):
-        fix_obj = fixtures[i]
-        fixtures = fixtures[i + 1:]
+    def deserialize_reorder_python(cls, fixtures, num_item, num_reorder):
+        num_items = len(fixtures)
+        if num_reorder > sum(range(num_items)):
+            raise DeserializationError
+        fix_obj = fixtures[num_item]
+        fixtures = fixtures[num_item + 1:]
         fixtures.append(fix_obj)
         return fixtures
 
     @classmethod
-    def deserialize_reorder_json(cls, fixtures, i):
+    def deserialize_reorder_json(cls, fixtures, num_item, num_reorder):
         fixtures_python = json.loads(fixtures)
-        fixtures_python = cls.deserialize_reorder_python(fixtures_python, i)
+        fixtures_python = cls.deserialize_reorder_python(fixtures_python, num_item, num_reorder)
         fixtures = dumps(fixtures_python)
         return fixtures
 
     @classmethod
-    def deserialize_reorder_yaml(cls, fixtures, i):
+    def deserialize_reorder_yaml(cls, fixtures, num_item, num_reorder):
         try:
             import yaml
         except ImportError:
             raise DeserializationError
         fixtures_python = yaml.load(fixtures, Loader=yaml.SafeLoader)
-        fixtures_python = cls.deserialize_reorder_python(fixtures_python, i)
+        fixtures_python = cls.deserialize_reorder_python(fixtures_python, num_item, num_reorder)
         fixtures = yaml.dump(fixtures_python)
         return fixtures
 
     @classmethod
-    def deserialize_reorder_xml(cls, fixtures, i):
-        fixture_item_start = findnth(fixtures, '<object ', i)
-        fixture_item_end = findnth(fixtures, '</object>', i)
+    def deserialize_reorder_xml(cls, fixtures, num_item, num_reorder):
+        token_object_start = '<object '
+        token_object_end = '</object>'
+        token_objects_end = '</django-objects>'
+        num_items = fixtures.count(token_object_start)
+        if num_reorder > sum(range(num_items)):
+            raise DeserializationError
+        fixture_first_item_start = findnth(fixtures, token_object_start, 0)
+        fixture_item_start = findnth(fixtures, token_object_start, num_item)
+        fixture_item_end = findnth(fixtures, token_object_end, num_item)
         if fixture_item_start == -1 or fixture_item_end == -1:
             raise DeserializationError
         fixtures_item = fixtures[fixture_item_start:fixture_item_end + 9]
-        fixtures = fixtures[:fixture_item_start] + fixtures[fixture_item_end + 9:]
-        last_item_index = findnth(fixtures, '</django-objects>', 0)
+        fixtures = fixtures[:fixture_first_item_start] + fixtures[fixture_item_end + 9:]
+        last_item_index = findnth(fixtures, token_objects_end, 0)
         if last_item_index == -1:
             raise DeserializationError
         fixtures = fixtures[:last_item_index] + fixtures_item + fixtures[last_item_index:]

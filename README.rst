@@ -49,8 +49,8 @@ Use cases
 How to use
 ==========
 
-The idea is get to have a serializer and a deserializer that this allow define some rules with a very few lines.
-There are three examples in the `example project <https://github.com/goinnn/django-deep-serializer/blob/master/example/example/app/serializer.py>`_. E.g.:
+The idea is get to have a serializer or/and a deserializer implemented with very few lines. These have to be able to define some "rules".
+There are four examples in the `example project <https://github.com/goinnn/django-deep-serializer/blob/master/example/example/app/serializer.py>`_. E.g.:
 
 ::
 
@@ -58,10 +58,11 @@ There are three examples in the `example project <https://github.com/goinnn/djan
 
         @classmethod
         def pre_serialize(cls, initial_obj, obj, request, options=None):
-            obj = super(WebSiteClone, cls).pre_serialize(initial_obj, obj, request, options=options)
+            obj = super(WebSiteClone, cls).pre_serialize(initial_obj, obj,
+                                                         request, options=options)
             new_title = '%s-%s' % (obj.title, time.time())
             obj.title = new_title[:200]
-            obj.slug = hash_slug()
+            obj.slug = get_hash()
             obj.original_website_id = obj.pk
             obj.initial_page = None
             return obj
@@ -79,7 +80,9 @@ There are three examples in the `example project <https://github.com/goinnn/djan
 
         @classmethod
         def pre_serialize(cls, initial_obj, obj, request, options=None):
-            obj = super(PageClone, cls).pre_serialize(initial_obj, obj, request, options=options)
+            obj = super(PageClone, cls).pre_serialize(initial_obj,
+                                                      obj, request,
+                                                      options=options)
             obj.website = initial_obj
             obj.created_from_id = obj.pk
             return obj
@@ -101,6 +104,20 @@ There are three examples in the `example project <https://github.com/goinnn/djan
                 obj.website.save()
 
 
+    def clone_website(website, format='python'):
+        walking_classes = {WebSite: WebSiteClone,
+                           Page: PageClone,
+                           User: BaseMetaWalkClass}
+        fixtures = Serializer.serialize(website, request=None,
+                                        walking_classes=walking_classes,
+                                        format=format,
+                                        indent=4,
+                                        natural_keys=natural_keys)
+        return Serializer.deserialize(website, fixtures,
+                                      format=format,
+                                      walking_classes=walking_classes,
+                                      natural_keys=natural_keys)
+
 Test project
 ============
 
@@ -109,5 +126,5 @@ a readily setup project that uses django-deep-serializer. You can run it as usua
 
 ::
 
-    python manage.py syncdb
+    python manage.py syncdb --noinput
     python manage.py runserver

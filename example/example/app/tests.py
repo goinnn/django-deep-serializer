@@ -144,13 +144,15 @@ class DeepSerializerTestCase(TestCase):
                                 'html_code': '<p>Index of my website</p>',
                                 'slug': 'index',
                                 'title': 'Index',
-                                'website': ['my-website-with-reorder']},
+                                'website': ['my-website-with-reorder'],
+                                'last_editor': ['admin']},
                      'model': 'app.page'},
                     {'fields': {'created_from': ['my-website', 'contact'],
                                 'html_code': '<p>Contact form</p>',
                                 'slug': 'contact',
                                 'title': 'Contact',
-                                'website': ['my-website-with-reorder']},
+                                'website': ['my-website-with-reorder'],
+                                'last_editor': ['admin']},
                      'model': 'app.page'},
                     {'fields': {'is_active': True,
                                 'original_website': ['my-website'],
@@ -171,6 +173,7 @@ class DeepSerializerTestCase(TestCase):
                 <field to="app.page" name="created_from" rel="ManyToOneRel"><natural>my-website</natural><natural>index</natural></field>
                 <field type="DateTimeField" name="creation_date"><None></None></field>
                 <field type="DateTimeField" name="modification_date"><None></None></field>
+                <field type="ForeignKey" name="last_editor"><natural>admin</natural></field>
             </object>
             <object model="app.page">
                 <field type="CharField" name="title">Contact</field>
@@ -180,6 +183,7 @@ class DeepSerializerTestCase(TestCase):
                 <field to="app.page" name="created_from" rel="ManyToOneRel"><natural>my-website</natural><natural>contact</natural></field>
                 <field type="DateTimeField" name="creation_date"><None></None></field>
                 <field type="DateTimeField" name="modification_date"><None></None></field>
+                <field type="ForeignKey" name="last_editor"><natural>admin</natural></field>
             </object>
             <object model="app.website">
                 <field type="CharField" name="title">My website with reorder XML</field>
@@ -200,13 +204,15 @@ class DeepSerializerTestCase(TestCase):
                                 'html_code': '<p>Index of my website</p>',
                                 'slug': 'index',
                                 'title': 'Index',
-                                'website': ['my-website-with-reorder-python']},
+                                'website': ['my-website-with-reorder-python'],
+                                'last_editor': ['admin']},
                      'model': 'app.page'},
                     {'fields': {'created_from': ['my-website', 'contact'],
                                 'html_code': '<p>Contact form</p>',
                                 'slug': 'contact',
                                 'title': 'Contact',
-                                'website': ['my-website-with-reorder-python']},
+                                'website': ['my-website-with-reorder-python'],
+                                'last_editor': ['admin']},
                      'model': 'app.page'},
                     {'fields': {'is_active': True,
                                 'original_website': ['my-website'],
@@ -228,6 +234,7 @@ class DeepSerializerTestCase(TestCase):
                 slug: index
                 title: Index
                 website: [my-website-with-reorder-yaml]
+                last_editor: [admin]
             model: app.page
         -   fields:
                 created_from: [my-website, contact]
@@ -237,6 +244,7 @@ class DeepSerializerTestCase(TestCase):
                 slug: contact
                 title: Contact
                 website: [my-website-with-reorder-yaml]
+                last_editor: [admin]
             model: app.page
         -   fields:
                 creation_date: null

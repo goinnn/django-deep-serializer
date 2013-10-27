@@ -9,7 +9,8 @@
         "creation_date": "2013-10-25T08:03:29.997Z", 
         "created_from": null, 
         "html_code": "<p>Index of my website</p>", 
-        "slug": "index"
+        "slug": "index",
+        "last_editor": 1
     }
 },
 {
@@ -22,7 +23,8 @@
         "creation_date": "2013-10-25T08:03:51.176Z", 
         "created_from": null, 
         "html_code": "<p>Contact form</p>", 
-        "slug": "contact"
+        "slug": "contact",
+        "last_editor": 1
     }
 },
 {

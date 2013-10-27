@@ -18,14 +18,17 @@ import datetime
 import uuid
 import time
 
-from deep_serializer import BaseMetaWalkClass, WALKING_STOP, WALKING_INTO_CLASS, ONLY_REFERENCE
+from deep_serializer import (BaseMetaWalkClass, WALKING_STOP,
+                             WALKING_INTO_CLASS, ONLY_REFERENCE)
 
 
 class MyMetaWalkClass(BaseMetaWalkClass):
 
     @classmethod
     def pre_serialize(cls, initial_obj, obj, request, options=None):
-        obj = super(MyMetaWalkClass, cls).pre_serialize(initial_obj, obj, request, options=options)
+        obj = super(MyMetaWalkClass, cls).pre_serialize(initial_obj, obj,
+                                                        request,
+                                                        options=options)
         obj.creation_date = None
         obj.modification_date = None
         return obj
@@ -50,7 +53,8 @@ class WebSiteClone(MyMetaWalkClass):
 
     @classmethod
     def pre_serialize(cls, initial_obj, obj, request, options=None):
-        obj = super(WebSiteClone, cls).pre_serialize(initial_obj, obj, request, options=options)
+        obj = super(WebSiteClone, cls).pre_serialize(initial_obj, obj,
+                                                     request, options=options)
         new_title = '%s-%s' % (obj.title, time.time())
         obj.title = new_title[:200]
         obj.slug = get_hash()
@@ -71,7 +75,9 @@ class PageClone(MyMetaWalkClass):
 
     @classmethod
     def pre_serialize(cls, initial_obj, obj, request, options=None):
-        obj = super(PageClone, cls).pre_serialize(initial_obj, obj, request, options=options)
+        obj = super(PageClone, cls).pre_serialize(initial_obj,
+                                                  obj, request,
+                                                  options=options)
         obj.website = initial_obj
         obj.created_from_id = obj.pk
         return obj
@@ -110,7 +116,9 @@ class WebSiteOwnersClone(WebSiteClone):
 
     @classmethod
     def pre_serialize(cls, initial_obj, obj, request, options=None):
-        obj = super(WebSiteOwnersClone, cls).pre_serialize(initial_obj, obj, request, options=options)
+        obj = super(WebSiteOwnersClone, cls).pre_serialize(initial_obj,
+                                                           obj, request,
+                                                           options=options)
         obj.owners = []
         return obj
 
@@ -119,7 +127,8 @@ class UserClone(BaseMetaWalkClass):
 
     @classmethod
     def pre_serialize(cls, initial_obj, obj, request, options=None):
-        obj = super(UserClone, cls).pre_serialize(initial_obj, obj, request, options=options)
+        obj = super(UserClone, cls).pre_serialize(initial_obj, obj,
+                                                  request, options=options)
         obj.date_joined = None
         obj.username = get_hash()
         obj.email = 'xxx@example.com'
@@ -174,7 +183,8 @@ class WebSiteRestoreNaturalKey(MyMetaWalkClass):
 
     @classmethod
     def pre_serialize(cls, initial_obj, obj, request, options=None):
-        obj = super(WebSiteRestoreNaturalKey, cls).pre_serialize(initial_obj, obj, request, options=options)
+        obj = super(WebSiteRestoreNaturalKey, cls).pre_serialize(
+            initial_obj, obj, request, options=options)
         obj.initial_page_bc = obj.initial_page
         obj.initial_page = None
         return obj
@@ -185,7 +195,8 @@ class WebSiteRestoreNaturalKey(MyMetaWalkClass):
             return WALKING_STOP
         if field_name in ('initial_page', 'original_website', 'owners'):
             return ONLY_REFERENCE
-        return super(WebSiteRestoreNaturalKey, cls).walking_into_class(obj, field_name, model)
+        return super(WebSiteRestoreNaturalKey, cls).walking_into_class(
+            obj, field_name, model)
 
 
 class PageRestoreNaturalKey(MyMetaWalkClass):
@@ -194,7 +205,8 @@ class PageRestoreNaturalKey(MyMetaWalkClass):
     def walking_into_class(cls, obj, field_name, model):
         if field_name in ('pages_created_of', 'created_from', 'website'):
             return ONLY_REFERENCE
-        return super(PageRestoreNaturalKey, cls).walking_into_class(obj, field_name, model)
+        return super(PageRestoreNaturalKey, cls).walking_into_class(
+            obj, field_name, model)
 
     @classmethod
     def post_save(cls, initial_obj, obj):

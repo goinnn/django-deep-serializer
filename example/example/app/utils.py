@@ -16,7 +16,7 @@
 
 from django.contrib.auth.models import User
 
-from deep_serializer import Serializer, BaseMetaWalkClass
+from deep_serializer import serializer, deserializer, BaseMetaWalkClass
 
 from example.app.models import WebSite, Page
 from example.app.serializer import (WebSiteClone, PageClone, UserClone, WebSiteOwnersClone,
@@ -58,21 +58,20 @@ def get_params_to_serialize_deserialize(action):
 
 def serialize_website(website, action='clone', format='json'):
     walking_classes, natural_keys = get_params_to_serialize_deserialize(action)
-    return Serializer.serialize(website, request=None,
-                                walking_classes=walking_classes,
-                                format=format,
-                                indent=4,
-                                natural_keys=natural_keys)
+    return serializer(format,
+                      website, request=None,
+                      walking_classes=walking_classes,
+                      indent=4,
+                      natural_keys=natural_keys)
 
 
 def deserialize_website(website, fixtures, action='clone', format='json'):
     walking_classes, natural_keys = get_params_to_serialize_deserialize(action)
-    return Serializer.deserialize(website, fixtures,
-                                  format=format,
-                                  walking_classes=walking_classes,
-                                  natural_keys=natural_keys)
+    return deserializer(format, website, fixtures,
+                        walking_classes=walking_classes,
+                        natural_keys=natural_keys)
 
 
-def clone_website(website, action='clone', format='python'):
+def clone_website(website, action='clone', format='json'):
     fixtures = serialize_website(website, action=action, format=format)
     return deserialize_website(website, fixtures, action=action, format=format)

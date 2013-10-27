@@ -17,5 +17,5 @@
 
 from deep_serializer.api import (BaseMetaWalkClass, WALKING_STOP,
                                 ONLY_REFERENCE, WALKING_INTO_CLASS)
-from deep_serializer.serializer import Serializer
-from deep_serializer.utils import has_natural_key, dumps
+from deep_serializer.base import get_serializer, get_deserializer, serializer, deserializer
+from deep_serializer.utils import has_natural_key

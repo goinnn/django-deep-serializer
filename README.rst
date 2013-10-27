@@ -108,15 +108,12 @@ There are four examples in the `example project <https://github.com/goinnn/djang
         walking_classes = {WebSite: WebSiteClone,
                            Page: PageClone,
                            User: BaseMetaWalkClass}
-        fixtures = Serializer.serialize(website, request=None,
-                                        walking_classes=walking_classes,
-                                        format=format,
-                                        indent=4,
-                                        natural_keys=natural_keys)
-        return Serializer.deserialize(website, fixtures,
-                                      format=format,
-                                      walking_classes=walking_classes,
-                                      natural_keys=natural_keys)
+        fixtures = serializer(format, website, request=None,
+                              walking_classes=walking_classes,
+                              natural_keys=natural_keys)
+        return deserializer(format, website, fixtures,
+                            walking_classes=walking_classes,
+                            natural_keys=natural_keys)
 
 Test project
 ============

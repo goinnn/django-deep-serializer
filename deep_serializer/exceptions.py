@@ -17,3 +17,7 @@
 
 class DoesNotNaturalKeyException(Exception):
     pass
+
+
+class DeepSerializerDoesNotExist(Exception):
+    pass

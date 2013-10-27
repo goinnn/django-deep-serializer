@@ -59,7 +59,7 @@ There are four examples in the `example project <https://github.com/goinnn/djang
         @classmethod
         def pre_serialize(cls, initial_obj, obj, request, options=None):
             obj = super(WebSiteClone, cls).pre_serialize(initial_obj, obj,
-                                                         request, options=options)
+                                                        request, options=options)
             new_title = '%s-%s' % (obj.title, time.time())
             obj.title = new_title[:200]
             obj.slug = get_hash()
@@ -68,7 +68,7 @@ There are four examples in the `example project <https://github.com/goinnn/djang
             return obj
 
         @classmethod
-        def walking_into_class(cls, obj, field_name, model):
+        def walking_into_class(cls, obj, field_name, model, request=None):
             if field_name in ('initial_page', 'websites_created_of'):
                 return WALKING_STOP
             elif field_name in ('original_website', 'owners'):
@@ -81,14 +81,14 @@ There are four examples in the `example project <https://github.com/goinnn/djang
         @classmethod
         def pre_serialize(cls, initial_obj, obj, request, options=None):
             obj = super(PageClone, cls).pre_serialize(initial_obj,
-                                                      obj, request,
-                                                      options=options)
+                                                    obj, request,
+                                                    options=options)
             obj.website = initial_obj
             obj.created_from_id = obj.pk
             return obj
 
         @classmethod
-        def walking_into_class(cls, obj, field_name, model):
+        def walking_into_class(cls, obj, field_name, model, request=None):
             if field_name in ('pages_created_of', 'website'):
                 return WALKING_STOP
             elif field_name in ('created_from'):
@@ -96,8 +96,8 @@ There are four examples in the `example project <https://github.com/goinnn/djang
             return WALKING_INTO_CLASS
 
         @classmethod
-        def post_save(cls, initial_obj, obj):
-            super(PageClone, cls).post_save(initial_obj, obj)
+        def post_save(cls, initial_obj, obj, request=None):
+            super(PageClone, cls).post_save(initial_obj, obj, request=request)
             initial_page = obj.created_from.website.initial_page
             if initial_page and obj.slug == initial_page.slug:
                 obj.website.initial_page = obj
@@ -112,6 +112,7 @@ There are four examples in the `example project <https://github.com/goinnn/djang
                               walking_classes=walking_classes,
                               natural_keys=natural_keys)
         return deserializer(format, website, fixtures,
+                            request=None,
                             walking_classes=walking_classes,
                             natural_keys=natural_keys)
 

@@ -22,7 +22,7 @@ WALKING_INTO_CLASS = 3
 class BaseMetaWalkClass(object):
 
     @classmethod
-    def pre_serialize(cls, initial_obj, obj, request, options=None):
+    def pre_serialize(cls, initial_obj, obj, request=None, options=None):
         """
             Given the root object, the current object the request and some option,
             You can treatment the object before to serialize the object.
@@ -31,7 +31,7 @@ class BaseMetaWalkClass(object):
         return obj
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model):
+    def walking_into_class(cls, obj, field_name, model, request=None):
         """
             Given the the current object, the relation name and the model to the relation,
             You can determine if to walk into this model or not.
@@ -49,7 +49,16 @@ class BaseMetaWalkClass(object):
         return queryset
 
     @classmethod
-    def pre_save(cls, initial_obj, obj):
+    def pretreatment_fixture(cls, initial_obj, obj_fix, request=None):
+        """
+            Given a dictionary (fixtures dictionary) you can treatment it,
+            before to deserialize the object.
+            This funcion is used at the deserialization process.
+        """
+        return obj_fix
+
+    @classmethod
+    def pre_save(cls, initial_obj, obj, request=None):
         """
             Given a obj you can treatment this before the save a object.
             This funcion is used at the deserialization process.
@@ -57,7 +66,7 @@ class BaseMetaWalkClass(object):
         pass
 
     @classmethod
-    def post_save(cls, initial_obj, obj):
+    def post_save(cls, initial_obj, obj, request=None):
         """
             Given a saved obj you can treatment this after the save a object.
             This is called after the every post_save signal

@@ -36,8 +36,8 @@ class MyMetaWalkClass(BaseMetaWalkClass):
         return obj
 
     @classmethod
-    def pre_save(cls, initial_obj, obj):
-        super(MyMetaWalkClass, cls).pre_save(initial_obj, obj)
+    def pre_save(cls, initial_obj, obj, request=None):
+        super(MyMetaWalkClass, cls).pre_save(initial_obj, obj, request=request)
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         if not obj.creation_date:
             obj.creation_date = now
@@ -65,7 +65,7 @@ class WebSiteClone(MyMetaWalkClass):
         return obj
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model):
+    def walking_into_class(cls, obj, field_name, model, request=None):
         if field_name in ('initial_page', 'websites_created_of'):
             return WALKING_STOP
         elif field_name in ('original_website', 'owners'):
@@ -85,7 +85,7 @@ class PageClone(MyMetaWalkClass):
         return obj
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model):
+    def walking_into_class(cls, obj, field_name, model, request=None):
         if field_name in ('pages_created_of', 'website'):
             return WALKING_STOP
         elif field_name in ('created_from'):
@@ -93,8 +93,8 @@ class PageClone(MyMetaWalkClass):
         return WALKING_INTO_CLASS
 
     @classmethod
-    def post_save(cls, initial_obj, obj):
-        super(PageClone, cls).post_save(initial_obj, obj)
+    def post_save(cls, initial_obj, obj, request=None):
+        super(PageClone, cls).post_save(initial_obj, obj, request=request)
         initial_page = obj.created_from.website.initial_page
         if initial_page and obj.slug == initial_page.slug:
             obj.website.initial_page = obj
@@ -109,7 +109,7 @@ class PageClone(MyMetaWalkClass):
 class WebSiteOwnersClone(WebSiteClone):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model):
+    def walking_into_class(cls, obj, field_name, model, request=None):
         if field_name in ('initial_page', 'websites_created_of'):
             return WALKING_STOP
         elif field_name in ('original_website'):
@@ -138,8 +138,8 @@ class UserClone(BaseMetaWalkClass):
         return obj
 
     @classmethod
-    def pre_save(cls, initial_obj, obj):
-        super(UserClone, cls).pre_save(initial_obj, obj)
+    def pre_save(cls, initial_obj, obj, request=None):
+        super(UserClone, cls).pre_save(initial_obj, obj, request=request)
         now = datetime.datetime.utcnow().replace(tzinfo=utc)
         if obj.date_joined is None:
             obj.date_joined = now
@@ -147,8 +147,8 @@ class UserClone(BaseMetaWalkClass):
             obj.last_login = now
 
     @classmethod
-    def post_save(cls, initial_obj, obj):
-        super(UserClone, cls).post_save(initial_obj, obj)
+    def post_save(cls, initial_obj, obj, request=None):
+        super(UserClone, cls).post_save(initial_obj, obj, request=request)
         db_website = initial_obj.__class__.objects.get(slug=initial_obj.slug)
         db_website.owners.add(obj)
 
@@ -162,7 +162,7 @@ class UserClone(BaseMetaWalkClass):
 class WebSiteRestore(MyMetaWalkClass):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model):
+    def walking_into_class(cls, obj, field_name, model, request=None):
         if field_name in ('websites_created_of'):
             return WALKING_STOP
         elif field_name in ('initial_page', 'original_website', 'owners'):
@@ -173,7 +173,7 @@ class WebSiteRestore(MyMetaWalkClass):
 class PageRestore(MyMetaWalkClass):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model):
+    def walking_into_class(cls, obj, field_name, model, request=None):
         if field_name in ('pages_created_of'):
             return WALKING_STOP
         elif field_name in ('created_from', 'website'):
@@ -196,7 +196,7 @@ class WebSiteRestoreNaturalKey(MyMetaWalkClass):
         return obj
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model):
+    def walking_into_class(cls, obj, field_name, model, request=None):
         if field_name in ('websites_created_of'):
             return WALKING_STOP
         if field_name in ('initial_page', 'original_website', 'owners'):
@@ -208,15 +208,15 @@ class WebSiteRestoreNaturalKey(MyMetaWalkClass):
 class PageRestoreNaturalKey(MyMetaWalkClass):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model):
+    def walking_into_class(cls, obj, field_name, model, request=None):
         if field_name in ('pages_created_of', 'created_from', 'website'):
             return ONLY_REFERENCE
         return super(PageRestoreNaturalKey, cls).walking_into_class(
             obj, field_name, model)
 
     @classmethod
-    def post_save(cls, initial_obj, obj):
-        super(PageRestoreNaturalKey, cls).post_save(initial_obj, obj)
+    def post_save(cls, initial_obj, obj, request=None):
+        super(PageRestoreNaturalKey, cls).post_save(initial_obj, obj, request=request)
         initial_page = initial_obj.initial_page_bc
         if initial_page and obj.slug == initial_page.slug:
             obj.website.initial_page = obj

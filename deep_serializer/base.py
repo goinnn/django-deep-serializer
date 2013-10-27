@@ -70,12 +70,12 @@ class BaseMetaWalkClassProvider(object):
 class Serializer(BaseMetaWalkClassProvider):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, walking_classes, walking_always=False):
+    def walking_into_class(cls, obj, field_name, model, walking_classes, walking_always=False, request=None):
         if walking_always:
             return WALKING_INTO_CLASS
         elif model in walking_classes:
             meta_class = cls.get_meta_walking_class(obj.__class__, walking_classes)
-            return meta_class.walking_into_class(obj, field_name, model)
+            return meta_class.walking_into_class(obj, field_name, model, request=request)
         else:
             return WALKING_STOP
 
@@ -84,7 +84,11 @@ class Serializer(BaseMetaWalkClassProvider):
         model = obj.__class__
         for field in model._meta.fields:
             if hasattr(field.rel, 'to'):
-                walking_status = cls.walking_into_class(obj, field.name, field.rel.to, walking_classes, walking_always)
+                walking_status = cls.walking_into_class(obj, field.name,
+                                                        field.rel.to,
+                                                        walking_classes,
+                                                        walking_always,
+                                                        request=request)
                 if walking_status != WALKING_INTO_CLASS:
                     continue
                 content = getattr(obj, field.name)
@@ -96,7 +100,12 @@ class Serializer(BaseMetaWalkClassProvider):
     def serialize_m2m(cls, obj, object_list, request=None, natural_keys=True, walking_classes=None, walking_always=True):
         model = obj.__class__
         for field in model._meta.many_to_many:
-            walking_status = cls.walking_into_class(obj, field.name, field.rel.to, walking_classes, walking_always)
+            walking_status = cls.walking_into_class(obj,
+                                                    field.name,
+                                                    field.rel.to,
+                                                    walking_classes,
+                                                    walking_always,
+                                                    request=request)
             if walking_status != WALKING_INTO_CLASS:
                 continue
             meta_class = cls.get_meta_walking_class(obj.__class__, walking_classes)
@@ -112,7 +121,12 @@ class Serializer(BaseMetaWalkClassProvider):
         model = obj.__class__
         for field in model._meta.get_all_related_objects():
             related_query_name = field.field.related_query_name()
-            walking_status = cls.walking_into_class(obj, related_query_name, field.model, walking_classes, walking_always)
+            walking_status = cls.walking_into_class(obj,
+                                                    related_query_name,
+                                                    field.model,
+                                                    walking_classes,
+                                                    walking_always,
+                                                    request=request)
             if walking_status != WALKING_INTO_CLASS:
                 continue
             try:
@@ -174,7 +188,12 @@ class Serializer(BaseMetaWalkClassProvider):
                     meta_walking_class = cls.get_meta_walking_class(content.__class__, walking_classes)
                     for field in content._meta.fields:
                         if hasattr(field.rel, 'to'):
-                            walking_status = cls.walking_into_class(content, field.name, field.rel.to, walking_classes, walking_always)
+                            walking_status = cls.walking_into_class(content,
+                                                                    field.name,
+                                                                    field.rel.to,
+                                                                    walking_classes,
+                                                                    walking_always,
+                                                                    request=request)
                             if walking_status == WALKING_STOP:
                                 field_null = field.null
                                 field_blank = field.blank
@@ -184,7 +203,12 @@ class Serializer(BaseMetaWalkClassProvider):
                                 field.null = field_null
                                 field.blank = field_blank
                     for field in content._meta.many_to_many:
-                        walking_status = cls.walking_into_class(content, field.name, field.rel.to, walking_classes, walking_always)
+                        walking_status = cls.walking_into_class(content,
+                                                                field.name,
+                                                                field.rel.to,
+                                                                walking_classes,
+                                                                walking_always,
+                                                                request=request)
                         if walking_status == WALKING_STOP:
                             getattr(content, field.name).clear()
                     content_to_serialize = meta_walking_class.pre_serialize(obj, content, request, options)
@@ -200,12 +224,13 @@ class Serializer(BaseMetaWalkClassProvider):
 class Deserializer(BaseMetaWalkClassProvider):
 
     @classmethod
-    def deserialize(cls, initial_obj, fixtures, walking_classes=None, using='default',
+    def deserialize(cls, initial_obj, fixtures, request=None, walking_classes=None, using='default',
                     natural_keys=True,
                     exclude_contents=None):
         with transaction.commit_manually():
             try:
                 contents = cls._deserialize(initial_obj, fixtures,
+                                            request=request,
                                             walking_classes=walking_classes, using=using,
                                             natural_keys=natural_keys,
                                             exclude_contents=exclude_contents)
@@ -220,6 +245,7 @@ class Deserializer(BaseMetaWalkClassProvider):
 
     @classmethod
     def _deserialize(cls, initial_obj, fixtures,
+                     request=None,
                      walking_classes=None, using='default',
                      natural_keys=True, exclude_contents=None,
                      contents=None, num_reorder=0):
@@ -257,15 +283,16 @@ class Deserializer(BaseMetaWalkClassProvider):
                                           obj.object.pk)
             if not obj_key in exclude_contents:
                 meta_walking_class = cls.get_meta_walking_class(obj.object.__class__, walking_classes)
-                meta_walking_class.pre_save(initial_obj, obj.object)
+                meta_walking_class.pre_save(initial_obj, obj.object, request=request)
                 obj.save(using=using)
-                meta_walking_class.post_save(initial_obj, obj.object)
+                meta_walking_class.post_save(initial_obj, obj.object, request=request)
                 contents.append(obj.object)
                 exclude_contents.append(obj_key)
         if obj_does_not_exist:
             num_reorder = num_reorder + 1
             fixtures = cls.deserialize_reorder(fixtures, num_item, num_reorder)
             cls._deserialize(initial_obj, fixtures,
+                             request=request,
                              walking_classes=walking_classes,
                              using=using,
                              natural_keys=natural_keys,
@@ -291,10 +318,11 @@ def serializer(format, initial_obj, request=None, walking_classes=None, natural_
                        options=options)
 
 
-def deserializer(format, initial_obj, fixtures, walking_classes=None,
+def deserializer(format, initial_obj, fixtures, request=None, walking_classes=None,
                  using='default', natural_keys=True, exclude_contents=None):
     d = get_deserializer(format)
-    return d.deserialize(initial_obj, fixtures, walking_classes=walking_classes,
+    return d.deserialize(initial_obj, fixtures, request=request,
+                         walking_classes=walking_classes,
                          using=using,
                          natural_keys=natural_keys,
                          exclude_contents=exclude_contents)

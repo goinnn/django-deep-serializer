@@ -49,15 +49,6 @@ class BaseMetaWalkClass(object):
         return queryset
 
     @classmethod
-    def pretreatment_fixture(cls, initial_obj, obj_fix):
-        """
-            Given a dictionary (fixtures dictionary) you can treatment it,
-            before to deserialize the object.
-            This funcion is used at the deserialization process.
-        """
-        return obj_fix
-
-    @classmethod
     def pre_save(cls, initial_obj, obj):
         """
             Given a obj you can treatment this before the save a object.

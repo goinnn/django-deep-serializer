@@ -69,7 +69,7 @@ def deserialize_website(website, fixtures, action='clone', format='json'):
                                   natural_keys=natural_keys)
 
 
-def clone_website(website, format='json'):
+def clone_website(website, format='python'):
     action = 'clone'
     fixtures = serialize_website(website, action=action, format=format)
     return deserialize_website(website, fixtures, action=action, format=format)

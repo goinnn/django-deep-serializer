@@ -184,8 +184,14 @@ SERIALIZATION_MODULES = {
     "xml"    : "deep_serializer.serializers.xml_serializer",
     "python" : "deep_serializer.serializers.python",
     "json"   : "deep_serializer.serializers.json",
-    #"yaml"   : "deep_serializer.serializers.pyyaml",
 }
+
+try:
+    import yaml
+    SERIALIZATION_MODULES["yaml"] = "deep_serializer.serializers.pyyaml"
+except ImportError:
+    pass
+
 
 CACHES = {
     'default': {

@@ -31,3 +31,10 @@ def has_natural_key(content):
 
 def dumps(fixtures_python):
     return json.dumps(fixtures_python, cls=DjangoJSONEncoder, sort_keys=True)
+
+
+def findnth(haystack, needle, n):
+    parts = haystack.split(needle, n + 1)
+    if len(parts) <= n + 1:
+        return -1
+    return len(haystack) - len(parts[-1]) - len(needle)

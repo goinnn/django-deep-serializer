@@ -23,7 +23,6 @@ from pprint import pprint
 from tempfile import gettempdir
 
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -38,7 +37,7 @@ else:
 
 from deep_serializer.api import BaseMetaWalkClass, WALKING_INTO_CLASS, WALKING_STOP
 from deep_serializer.exceptions import DoesNotNaturalKeyException
-from deep_serializer.utils import has_natural_key, dumps
+from deep_serializer.utils import has_natural_key, dumps, findnth
 
 PY3 = sys.version_info[0] == 3
 
@@ -194,35 +193,11 @@ class Serializer(object):
                     sorted_function=None):
         with transaction.commit_manually():
             try:
-                fixtures_python = json.loads(fixtures)
-                fixtures_python_changed = [obj for obj in fixtures_python if obj['fields'].pop('changed', True) and not obj['fields'].get('deleted', False)]
-                fixtures_python_deleted = [obj for obj in fixtures_python if obj['fields'].get('deleted', False)]
-                if getattr(settings, 'JSON_DEBUG', False):
-                    log_json('put_request_changed.json', fixtures_python_changed)
-                    log_json('put_request_deleted.json', fixtures_python_deleted)
-                if not natural_keys:
-                    fixtures_python_with_pk = [obj for obj in fixtures_python_changed if 'pk' in obj]
-                    fixtures_python_without_pk = [obj for obj in fixtures_python_changed if not 'pk' in obj]
-                    fixtures_with_pk = cls.pretreatment_fixtures(initial_obj, fixtures_python_with_pk, walking_classes, sorted_function)
-                    fixtures_without_pk = cls.pretreatment_fixtures(initial_obj, fixtures_python_without_pk, walking_classes, sorted_function)
-                    contents = cls._deserialize(initial_obj, fixtures_with_pk,
-                                                len_fixtures=len(fixtures_python_with_pk), format=format,
-                                                walking_classes=walking_classes, using=using,
-                                                natural_keys=natural_keys,
-                                                exclude_contents=exclude_contents)
-                    contents += cls._deserialize(initial_obj, fixtures_without_pk,
-                                                 len_fixtures=len(fixtures_python_without_pk), format=format,
-                                                 walking_classes=walking_classes, using=using,
-                                                 natural_keys=True,
-                                                 exclude_contents=exclude_contents)
-                else:
-                    fixtures = cls.pretreatment_fixtures(initial_obj, fixtures_python_changed, walking_classes, sorted_function)
-                    contents = cls._deserialize(initial_obj, fixtures,
-                                                len_fixtures=len(fixtures_python_changed), format=format,
-                                                walking_classes=walking_classes, using=using,
-                                                natural_keys=natural_keys,
-                                                exclude_contents=exclude_contents)
-                cls.delete_contents(fixtures_python_deleted)
+                contents = cls._deserialize(initial_obj, fixtures,
+                                            format=format,
+                                            walking_classes=walking_classes, using=using,
+                                            natural_keys=natural_keys,
+                                            exclude_contents=exclude_contents)
                 transaction.commit()
                 return contents
             except Exception as e:
@@ -233,28 +208,17 @@ class Serializer(object):
                 raise e
 
     @classmethod
-    def pretreatment_fixtures(cls, initial_obj, fixtures_python, walking_classes, sorted_function=None):
-        if sorted_function:
-            fixtures_python.sort(cmp=sorted_function)
-        for obj in fixtures_python:
-            app_label, model = obj['model'].split(".")
-            model = ContentType.objects.get(model=model, app_label=app_label).model_class()
-            meta_walking_class = cls.get_meta_walking_class(model, walking_classes)
-            meta_walking_class.pretreatment_fixture(initial_obj, obj)
-        return dumps(fixtures_python)
-
-    @classmethod
-    def _deserialize(cls, initial_obj, fixtures, len_fixtures, format='json',
+    def _deserialize(cls, initial_obj, fixtures, format='json',
                      walking_classes=None, using='default',
                      natural_keys=True,
                      exclude_contents=None, contents=None):
-        return cls.deserialize_step(initial_obj, fixtures, len_fixtures=len_fixtures,
+        return cls.deserialize_step(initial_obj, fixtures,
                                     format=format, walking_classes=walking_classes, using=using,
                                     natural_keys=natural_keys,
                                     exclude_contents=exclude_contents, contents=contents)
 
     @classmethod
-    def deserialize_step(cls, initial_obj, fixtures, len_fixtures, format='json',
+    def deserialize_step(cls, initial_obj, fixtures, format='json',
                          walking_classes=None, using='default',
                          natural_keys=True, exclude_contents=None, contents=None):
         objects = serializers.deserialize(format, fixtures, using=using,
@@ -274,7 +238,7 @@ class Serializer(object):
                 else:
                     obj = objects.next()
                 i = i + 1
-            except DeserializationError:
+            except (DeserializationError, ObjectDoesNotExist):
                 obj_does_not_exist = True
                 break
             except StopIteration:
@@ -297,12 +261,8 @@ class Serializer(object):
                 contents.append(obj.object)
                 exclude_contents.append(obj_key)
         if obj_does_not_exist:
-            fixtures_python = json.loads(fixtures)
-            fix_obj = fixtures_python[i]
-            fixtures_python = fixtures_python[i + 1:]
-            fixtures_python.append(fix_obj)
-            fixtures = dumps(fixtures_python)
-            cls._deserialize(initial_obj, fixtures, len_fixtures=len_fixtures, format=format,
+            fixtures = getattr(cls, 'deserialize_reorder_%s' % format)(fixtures, i)
+            cls._deserialize(initial_obj, fixtures, format=format,
                              walking_classes=walking_classes,
                              natural_keys=natural_keys,
                              exclude_contents=exclude_contents,
@@ -310,15 +270,40 @@ class Serializer(object):
         return contents
 
     @classmethod
-    def delete_contents(cls, fixtures):
-        cts = {}
-        for obj_fix in fixtures:
-            app_model = obj_fix['model']
-            if not app_model in cts:
-                cts[app_model] = []
-            cts[app_model].append(obj_fix['pk'])
-        for app_model, pks in cts.items():
-            app_label, model = obj_fix['model'].split('.')
-            ct = ContentType.objects.get(app_label=app_label, model=model)
-            model_class = ct.model_class()
-            model_class.objects.filter(pk__in=pks).delete()
+    def deserialize_reorder_python(cls, fixtures, i):
+        fix_obj = fixtures[i]
+        fixtures = fixtures[i + 1:]
+        fixtures.append(fix_obj)
+        return fixtures
+
+    @classmethod
+    def deserialize_reorder_json(cls, fixtures, i):
+        fixtures_python = json.loads(fixtures)
+        fixtures_python = cls.deserialize_reorder_python(fixtures_python, i)
+        fixtures = dumps(fixtures_python)
+        return fixtures
+
+    @classmethod
+    def deserialize_reorder_yaml(cls, fixtures, i):
+        try:
+            import yaml
+        except ImportError:
+            raise DeserializationError
+        fixtures_python = yaml.load(fixtures, Loader=yaml.SafeLoader)
+        fixtures_python = cls.deserialize_reorder_python(fixtures_python, i)
+        fixtures = yaml.dump(fixtures_python)
+        return fixtures
+
+    @classmethod
+    def deserialize_reorder_xml(cls, fixtures, i):
+        fixture_item_start = findnth(fixtures, '<object ', i)
+        fixture_item_end = findnth(fixtures, '</object>', i)
+        if fixture_item_start == -1 or fixture_item_end == -1:
+            raise DeserializationError
+        fixtures_item = fixtures[fixture_item_start:fixture_item_end + 9]
+        fixtures = fixtures[:fixture_item_start] + fixtures[fixture_item_end + 9:]
+        last_item_index = findnth(fixtures, '</django-objects>', 0)
+        if last_item_index == -1:
+            raise DeserializationError
+        fixtures = fixtures[:last_item_index] + fixtures_item + fixtures[last_item_index:]
+        return fixtures

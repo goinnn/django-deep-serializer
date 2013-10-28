@@ -117,7 +117,7 @@ class WebSiteOwnersClone(WebSiteClone):
             return WALKING_STOP
         elif field_name in ('original_website'):
             return ONLY_REFERENCE
-        return super(WebSiteOwnersClone, cls).walking_into_class(
+        return super(WebSiteClone, cls).walking_into_class(
             initial_obj, obj, field_name, model, request=request)
 
     @classmethod
@@ -180,9 +180,7 @@ class WebSiteRestore(MyMetaWalkClass):
 
     @classmethod
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
-        if field_name in ('websites_created_of'):
-            return WALKING_STOP
-        elif field_name in ('initial_page', 'original_website', 'owners'):
+        if field_name in ('websites_created_of', 'initial_page', 'original_website', 'owners'):
             return ONLY_REFERENCE
         return super(WebSiteRestore, cls).walking_into_class(
             initial_obj, obj, field_name, model, request=request)
@@ -192,9 +190,7 @@ class PageRestore(MyMetaWalkClass):
 
     @classmethod
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
-        if field_name in ('pages_created_of'):
-            return WALKING_STOP
-        elif field_name in ('created_from', 'website'):
+        if field_name in ('pages_created_of', 'created_from', 'website', 'last_editor'):
             return ONLY_REFERENCE
         return super(PageRestore, cls).walking_into_class(
             initial_obj, obj, field_name, model, request=request)
@@ -217,9 +213,7 @@ class WebSiteRestoreNaturalKey(MyMetaWalkClass):
 
     @classmethod
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
-        if field_name in ('websites_created_of'):
-            return WALKING_STOP
-        if field_name in ('initial_page', 'original_website', 'owners'):
+        if field_name in ('websites_created_of', 'initial_page', 'original_website', 'owners', 'last_editor'):
             return ONLY_REFERENCE
         return super(WebSiteRestoreNaturalKey, cls).walking_into_class(
             initial_obj, obj, field_name, model, request)
@@ -229,7 +223,7 @@ class PageRestoreNaturalKey(MyMetaWalkClass):
 
     @classmethod
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
-        if field_name in ('pages_created_of', 'created_from', 'website'):
+        if field_name in ('pages_created_of', 'created_from', 'website', 'last_editor'):
             return ONLY_REFERENCE
         return super(PageRestoreNaturalKey, cls).walking_into_class(
             initial_obj, obj, field_name, model, request)

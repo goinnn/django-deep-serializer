@@ -70,21 +70,24 @@ class BaseMetaWalkClassProvider(object):
 class Serializer(BaseMetaWalkClassProvider):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, walking_classes, walking_always=False, request=None):
+    def walking_into_class(cls, initial_obj, obj, field_name, model,
+                           walking_classes, walking_always=False, request=None):
         if walking_always:
             return WALKING_INTO_CLASS
         elif model in walking_classes:
             meta_class = cls.get_meta_walking_class(obj.__class__, walking_classes)
-            return meta_class.walking_into_class(obj, field_name, model, request=request)
+            return meta_class.walking_into_class(initial_obj, obj, field_name, model, request=request)
         else:
             return WALKING_STOP
 
     @classmethod
-    def serialize_fk(cls, obj, object_list, request=None, natural_keys=True, walking_classes=None, walking_always=True):
+    def serialize_fk(cls, initial_obj, obj, object_list, request=None,
+                     natural_keys=True, walking_classes=None, walking_always=True):
         model = obj.__class__
         for field in model._meta.fields:
             if hasattr(field.rel, 'to'):
-                walking_status = cls.walking_into_class(obj, field.name,
+                walking_status = cls.walking_into_class(initial_obj,
+                                                        obj, field.name,
                                                         field.rel.to,
                                                         walking_classes,
                                                         walking_always,
@@ -93,14 +96,16 @@ class Serializer(BaseMetaWalkClassProvider):
                     continue
                 content = getattr(obj, field.name)
                 if content and not content in object_list:
-                    cls.objects_to_serialize(content, object_list, request,
+                    cls.objects_to_serialize(initial_obj, content, object_list, request,
                                              natural_keys, walking_classes, walking_always)
 
     @classmethod
-    def serialize_m2m(cls, obj, object_list, request=None, natural_keys=True, walking_classes=None, walking_always=True):
+    def serialize_m2m(cls, initial_obj, obj, object_list, request=None,
+                      natural_keys=True, walking_classes=None, walking_always=True):
         model = obj.__class__
         for field in model._meta.many_to_many:
-            walking_status = cls.walking_into_class(obj,
+            walking_status = cls.walking_into_class(initial_obj,
+                                                    obj,
                                                     field.name,
                                                     field.rel.to,
                                                     walking_classes,
@@ -110,18 +115,20 @@ class Serializer(BaseMetaWalkClassProvider):
                 continue
             meta_class = cls.get_meta_walking_class(obj.__class__, walking_classes)
             contents = getattr(obj, field.name).all()
-            contents = meta_class.get_queryset_to_relation(obj, field.name, contents, request=request)
+            contents = meta_class.get_queryset_to_relation(initial_obj, obj, field.name, contents, request=request)
             for content in contents:
                 if content and not content in object_list:
-                    cls.objects_to_serialize(content, object_list, request,
+                    cls.objects_to_serialize(initial_obj, content, object_list, request,
                                              natural_keys, walking_classes, walking_always)
 
     @classmethod
-    def serialize_reverse(cls, obj, object_list, request=None, natural_keys=True, walking_classes=None, walking_always=True):
+    def serialize_reverse(cls, initial_obj, obj, object_list, request=None,
+                          natural_keys=True, walking_classes=None, walking_always=True):
         model = obj.__class__
         for field in model._meta.get_all_related_objects():
             related_query_name = field.field.related_query_name()
-            walking_status = cls.walking_into_class(obj,
+            walking_status = cls.walking_into_class(initial_obj,
+                                                    obj,
                                                     related_query_name,
                                                     field.model,
                                                     walking_classes,
@@ -140,12 +147,15 @@ class Serializer(BaseMetaWalkClassProvider):
                 else:
                     meta_class = cls.get_meta_walking_class(obj.__class__, walking_classes)
                     contents = relation.all()
-                    contents = meta_class.get_queryset_to_relation(obj, related_query_name, contents, request=request)
+                    contents = meta_class.get_queryset_to_relation(initial_obj, obj,
+                                                                   related_query_name,
+                                                                   contents,
+                                                                   request=request)
             except ObjectDoesNotExist:
                 contents = []
             for content in contents:
                 if content and not content in object_list:
-                    cls.objects_to_serialize(content, object_list, request,
+                    cls.objects_to_serialize(initial_obj, content, object_list, request,
                                              natural_keys, walking_classes, walking_always)
 
     @classmethod
@@ -155,32 +165,48 @@ class Serializer(BaseMetaWalkClassProvider):
         object_list.append(content)
 
     @classmethod
-    def objects_to_serialize(cls, obj, object_list=None, request=None, natural_keys=True, walking_classes=None, walking_always=True):
+    def objects_to_serialize(cls, initial_obj, obj, object_list=None,
+                             request=None, natural_keys=True,
+                             walking_classes=None, walking_always=True):
         object_list = object_list or []
         walking_classes = walking_classes or []
         if obj in object_list:
             return object_list
         cls.add_content(object_list, obj, request=None, natural_keys=natural_keys)
-        cls.serialize_fk(obj, object_list, request=request, natural_keys=natural_keys, walking_classes=walking_classes, walking_always=walking_always)
-        cls.serialize_m2m(obj, object_list, request=request, natural_keys=natural_keys, walking_classes=walking_classes, walking_always=walking_always)
-        cls.serialize_reverse(obj, object_list, request=request, natural_keys=natural_keys, walking_classes=walking_classes, walking_always=walking_always)
+        cls.serialize_fk(initial_obj,
+                         obj, object_list, request=request,
+                         natural_keys=natural_keys,
+                         walking_classes=walking_classes,
+                         walking_always=walking_always)
+        cls.serialize_m2m(initial_obj,
+                          obj,
+                          object_list,
+                          request=request,
+                          natural_keys=natural_keys,
+                          walking_classes=walking_classes,
+                          walking_always=walking_always)
+        cls.serialize_reverse(initial_obj, obj, object_list,
+                              request=request,
+                              natural_keys=natural_keys,
+                              walking_classes=walking_classes,
+                              walking_always=walking_always)
         return object_list
 
     @classmethod
     def serialize(cls, obj, request=None, walking_classes=None, natural_keys=True,
                   indent=None, walking_always=False,
-                  options=None):
-        options = options or {}
+                  serialize_options=None):
+        serialize_options = serialize_options or {}
         walking_classes = walking_classes or []
         object_list = None
-        contents = cls.objects_to_serialize(obj, object_list,
+        contents = cls.objects_to_serialize(obj, obj, object_list,
                                             request=request,
                                             natural_keys=natural_keys,
                                             walking_classes=walking_classes,
                                             walking_always=walking_always)
         if natural_keys:
-            options['use_natural_primary_keys'] = True
-            options['use_natural_foreign_keys'] = True
+            serialize_options['use_natural_primary_keys'] = True
+            serialize_options['use_natural_foreign_keys'] = True
         contents_to_serialize = []
         with transaction.commit_manually():
             try:
@@ -188,7 +214,8 @@ class Serializer(BaseMetaWalkClassProvider):
                     meta_walking_class = cls.get_meta_walking_class(content.__class__, walking_classes)
                     for field in content._meta.fields:
                         if hasattr(field.rel, 'to'):
-                            walking_status = cls.walking_into_class(content,
+                            walking_status = cls.walking_into_class(obj,
+                                                                    content,
                                                                     field.name,
                                                                     field.rel.to,
                                                                     walking_classes,
@@ -203,7 +230,8 @@ class Serializer(BaseMetaWalkClassProvider):
                                 field.null = field_null
                                 field.blank = field_blank
                     for field in content._meta.many_to_many:
-                        walking_status = cls.walking_into_class(content,
+                        walking_status = cls.walking_into_class(obj,
+                                                                content,
                                                                 field.name,
                                                                 field.rel.to,
                                                                 walking_classes,
@@ -211,11 +239,11 @@ class Serializer(BaseMetaWalkClassProvider):
                                                                 request=request)
                         if walking_status == WALKING_STOP:
                             getattr(content, field.name).clear()
-                    content_to_serialize = meta_walking_class.pre_serialize(obj, content, request, options)
+                    content_to_serialize = meta_walking_class.pre_serialize(obj, content, request, serialize_options)
                     if content_to_serialize:
                         contents_to_serialize.append(content_to_serialize)
                 fixtures = serializers.serialize(cls.format, contents_to_serialize, indent=indent,
-                                                 **options)
+                                                 **serialize_options)
             finally:
                 transaction.rollback()
         return fixtures
@@ -224,16 +252,30 @@ class Serializer(BaseMetaWalkClassProvider):
 class Deserializer(BaseMetaWalkClassProvider):
 
     @classmethod
-    def deserialize(cls, initial_obj, fixtures, request=None, walking_classes=None, using='default',
+    def deserialize(cls, initial_obj, fixtures, request=None,
+                    walking_classes=None,
+                    using='default',
                     natural_keys=True,
-                    exclude_contents=None):
+                    exclude_contents=None,
+                    deserialize_options=None,
+                    pretreatment_fixtures=False,
+                    pretreatment_fixtures_sorted_function=None):
+        deserialize_options = deserialize_options or {}
         with transaction.commit_manually():
             try:
+                if pretreatment_fixtures:
+                    fixtures = cls.pretreatment_fixtures(initial_obj,
+                                                         fixtures,
+                                                         walking_classes,
+                                                         deserialize_options,
+                                                         pretreatment_fixtures_sorted_function)
                 contents = cls._deserialize(initial_obj, fixtures,
                                             request=request,
-                                            walking_classes=walking_classes, using=using,
+                                            walking_classes=walking_classes,
+                                            using=using,
                                             natural_keys=natural_keys,
-                                            exclude_contents=exclude_contents)
+                                            exclude_contents=exclude_contents,
+                                            deserialize_options=deserialize_options)
                 transaction.commit()
                 return contents
             except Exception as e:
@@ -246,12 +288,18 @@ class Deserializer(BaseMetaWalkClassProvider):
     @classmethod
     def _deserialize(cls, initial_obj, fixtures,
                      request=None,
-                     walking_classes=None, using='default',
-                     natural_keys=True, exclude_contents=None,
+                     walking_classes=None,
+                     using='default',
+                     natural_keys=True,
+                     exclude_contents=None,
+                     deserialize_options=None,
                      contents=None, num_reorder=0):
+        deserialize_options = deserialize_options or {}
+        if natural_keys:
+            deserialize_options['use_natural_primary_keys'] = True
+            deserialize_options['use_natural_foreign_keys'] = True
         objects = serializers.deserialize(cls.format, fixtures, using=using,
-                                          use_natural_primary_keys=natural_keys,
-                                          use_natural_foreign_keys=natural_keys)
+                                          **deserialize_options)
         exclude_contents = exclude_contents or []
         contents = contents or []
         init = True
@@ -297,6 +345,7 @@ class Deserializer(BaseMetaWalkClassProvider):
                              using=using,
                              natural_keys=natural_keys,
                              exclude_contents=exclude_contents,
+                             deserialize_options=deserialize_options,
                              contents=contents,
                              num_reorder=num_reorder)
         return contents
@@ -305,27 +354,39 @@ class Deserializer(BaseMetaWalkClassProvider):
     def deserialize_reorder(cls, fixtures, num_item, num_reorder):
         raise NotImplementedError
 
+    @classmethod
+    def pretreatment_fixtures(cls, initial_obj, fixtures, walking_classes,
+                              request=None, deserialize_options=None,
+                              sorted_function=None):
+        raise NotImplementedError
+
 
 def serializer(format, initial_obj, request=None, walking_classes=None, natural_keys=True,
                indent=None, walking_always=False,
-               options=None):
+               serialize_options=None):
     s = get_serializer(format)
     return s.serialize(initial_obj, request=request,
                        walking_classes=walking_classes,
                        indent=indent,
                        natural_keys=natural_keys,
                        walking_always=walking_always,
-                       options=options)
+                       serialize_options=serialize_options)
 
 
 def deserializer(format, initial_obj, fixtures, request=None, walking_classes=None,
-                 using='default', natural_keys=True, exclude_contents=None):
+                 using='default', natural_keys=True, exclude_contents=None,
+                 pretreatment_fixtures=False,
+                 pretreatment_fixtures_sorted_function=None,
+                 deserialize_options=None):
     d = get_deserializer(format)
     return d.deserialize(initial_obj, fixtures, request=request,
                          walking_classes=walking_classes,
                          using=using,
                          natural_keys=natural_keys,
-                         exclude_contents=exclude_contents)
+                         exclude_contents=exclude_contents,
+                         deserialize_options=deserialize_options,
+                         pretreatment_fixtures=pretreatment_fixtures,
+                         pretreatment_fixtures_sorted_function=pretreatment_fixtures_sorted_function,)
 
 
 def get_serializer(format):

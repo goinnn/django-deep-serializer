@@ -50,16 +50,17 @@ How to use
 ==========
 
 The idea is get to have a serializer or/and a deserializer implemented with very few lines. These have to be able to define some "rules".
-There are four examples in the `example project <https://github.com/goinnn/django-deep-serializer/blob/master/example/example/app/serializer.py>`_. E.g.:
+There are five examples (five distinct use case) in the `example project <https://github.com/goinnn/django-deep-serializer/blob/master/example/example/app/serializer.py>`_. E.g.:
 
 ::
 
     class WebSiteClone(MyMetaWalkClass):
 
         @classmethod
-        def pre_serialize(cls, initial_obj, obj, request, options=None):
+        def pre_serialize(cls, initial_obj, obj, request, serialize_options=None):
             obj = super(WebSiteClone, cls).pre_serialize(initial_obj, obj,
-                                                        request, options=options)
+                                                        request,
+                                                        serialize_options=serialize_options)
             new_title = '%s-%s' % (obj.title, time.time())
             obj.title = new_title[:200]
             obj.slug = get_hash()
@@ -68,32 +69,34 @@ There are four examples in the `example project <https://github.com/goinnn/djang
             return obj
 
         @classmethod
-        def walking_into_class(cls, obj, field_name, model, request=None):
+        def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
             if field_name in ('initial_page', 'websites_created_of'):
                 return WALKING_STOP
             elif field_name in ('original_website', 'owners'):
                 return ONLY_REFERENCE
-            return WALKING_INTO_CLASS
+            return super(WebSiteClone, cls).walking_into_class(
+                initial_obj, obj, field_name, model, request=request)
 
 
     class PageClone(MyMetaWalkClass):
 
         @classmethod
-        def pre_serialize(cls, initial_obj, obj, request, options=None):
+        def pre_serialize(cls, initial_obj, obj, request, serialize_options=None):
             obj = super(PageClone, cls).pre_serialize(initial_obj,
                                                     obj, request,
-                                                    options=options)
+                                                    serialize_options=serialize_options)
             obj.website = initial_obj
             obj.created_from_id = obj.pk
             return obj
 
         @classmethod
-        def walking_into_class(cls, obj, field_name, model, request=None):
+        def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
             if field_name in ('pages_created_of', 'website'):
                 return WALKING_STOP
-            elif field_name in ('created_from'):
+            elif field_name in ('created_from', 'last_editor'):
                 return ONLY_REFERENCE
-            return WALKING_INTO_CLASS
+            return super(PageClone, cls).walking_into_class(
+                initial_obj, obj, field_name, model, request=request)
 
         @classmethod
         def post_save(cls, initial_obj, obj, request=None):

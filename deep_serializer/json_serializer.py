@@ -44,3 +44,15 @@ class Deserializer(python_serializer.Deserializer):
         fixtures_python = super(Deserializer, cls).deserialize_reorder(fixtures_python, num_item, num_reorder)
         fixtures = dumps(fixtures_python)
         return fixtures
+
+    @classmethod
+    def pretreatment_fixtures(cls, initial_obj, fixtures, walking_classes,
+                              request=None, deserialize_options=None,
+                              sorted_function=None):
+        fixtures_python = json.loads(fixtures)
+        fixtures_python = super(Deserializer, cls).pretreatment_fixtures(
+            initial_obj, fixtures_python, walking_classes,
+            request=request, deserialize_options=deserialize_options,
+            sorted_function=sorted_function)
+        fixtures = dumps(fixtures_python)
+        return fixtures

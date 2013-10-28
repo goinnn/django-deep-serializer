@@ -21,16 +21,16 @@ import time
 from django.utils.timezone import utc
 
 from deep_serializer import (BaseMetaWalkClass, WALKING_STOP,
-                             WALKING_INTO_CLASS, ONLY_REFERENCE)
+                             ONLY_REFERENCE)
 
 
 class MyMetaWalkClass(BaseMetaWalkClass):
 
     @classmethod
-    def pre_serialize(cls, initial_obj, obj, request, options=None):
+    def pre_serialize(cls, initial_obj, obj, request=None, serialize_options=None):
         obj = super(MyMetaWalkClass, cls).pre_serialize(initial_obj, obj,
                                                         request,
-                                                        options=options)
+                                                        serialize_options=serialize_options)
         obj.creation_date = None
         obj.modification_date = None
         return obj
@@ -54,9 +54,10 @@ def get_hash():
 class WebSiteClone(MyMetaWalkClass):
 
     @classmethod
-    def pre_serialize(cls, initial_obj, obj, request, options=None):
+    def pre_serialize(cls, initial_obj, obj, request, serialize_options=None):
         obj = super(WebSiteClone, cls).pre_serialize(initial_obj, obj,
-                                                     request, options=options)
+                                                     request,
+                                                     serialize_options=serialize_options)
         new_title = '%s-%s' % (obj.title, time.time())
         obj.title = new_title[:200]
         obj.slug = get_hash()
@@ -65,32 +66,34 @@ class WebSiteClone(MyMetaWalkClass):
         return obj
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, request=None):
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('initial_page', 'websites_created_of'):
             return WALKING_STOP
         elif field_name in ('original_website', 'owners'):
             return ONLY_REFERENCE
-        return WALKING_INTO_CLASS
+        return super(WebSiteClone, cls).walking_into_class(
+            initial_obj, obj, field_name, model, request=request)
 
 
 class PageClone(MyMetaWalkClass):
 
     @classmethod
-    def pre_serialize(cls, initial_obj, obj, request, options=None):
+    def pre_serialize(cls, initial_obj, obj, request, serialize_options=None):
         obj = super(PageClone, cls).pre_serialize(initial_obj,
                                                   obj, request,
-                                                  options=options)
+                                                  serialize_options=serialize_options)
         obj.website = initial_obj
         obj.created_from_id = obj.pk
         return obj
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, request=None):
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('pages_created_of', 'website'):
             return WALKING_STOP
-        elif field_name in ('created_from'):
+        elif field_name in ('created_from', 'last_editor'):
             return ONLY_REFERENCE
-        return WALKING_INTO_CLASS
+        return super(PageClone, cls).walking_into_class(
+            initial_obj, obj, field_name, model, request=request)
 
     @classmethod
     def post_save(cls, initial_obj, obj, request=None):
@@ -109,28 +112,42 @@ class PageClone(MyMetaWalkClass):
 class WebSiteOwnersClone(WebSiteClone):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, request=None):
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('initial_page', 'websites_created_of'):
             return WALKING_STOP
         elif field_name in ('original_website'):
             return ONLY_REFERENCE
-        return WALKING_INTO_CLASS
+        return super(WebSiteOwnersClone, cls).walking_into_class(
+            initial_obj, obj, field_name, model, request=request)
 
     @classmethod
-    def pre_serialize(cls, initial_obj, obj, request, options=None):
+    def pre_serialize(cls, initial_obj, obj, request, serialize_options=None):
         obj = super(WebSiteOwnersClone, cls).pre_serialize(initial_obj,
                                                            obj, request,
-                                                           options=options)
+                                                           serialize_options=serialize_options)
         obj.owners = []
         return obj
+
+
+class PageOwnersClone(PageClone):
+
+    @classmethod
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
+        if field_name in ('pages_created_of', 'website'):
+            return WALKING_STOP
+        elif field_name in ('created_from'):
+            return ONLY_REFERENCE
+        return super(PageClone, cls).walking_into_class(
+            initial_obj, obj, field_name, model, request=request)
 
 
 class UserClone(BaseMetaWalkClass):
 
     @classmethod
-    def pre_serialize(cls, initial_obj, obj, request, options=None):
+    def pre_serialize(cls, initial_obj, obj, request, serialize_options=None):
         obj = super(UserClone, cls).pre_serialize(initial_obj, obj,
-                                                  request, options=options)
+                                                  request,
+                                                  serialize_options=serialize_options)
         obj.date_joined = None
         obj.last_login = None
         obj.username = get_hash()
@@ -162,23 +179,26 @@ class UserClone(BaseMetaWalkClass):
 class WebSiteRestore(MyMetaWalkClass):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, request=None):
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('websites_created_of'):
             return WALKING_STOP
         elif field_name in ('initial_page', 'original_website', 'owners'):
             return ONLY_REFERENCE
-        return WALKING_INTO_CLASS
+        return super(WebSiteRestore, cls).walking_into_class(
+            initial_obj, obj, field_name, model, request=request)
 
 
 class PageRestore(MyMetaWalkClass):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, request=None):
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('pages_created_of'):
             return WALKING_STOP
         elif field_name in ('created_from', 'website'):
             return ONLY_REFERENCE
-        return WALKING_INTO_CLASS
+        return super(PageRestore, cls).walking_into_class(
+            initial_obj, obj, field_name, model, request=request)
+
 
 ## End example 3
 
@@ -188,31 +208,31 @@ class PageRestore(MyMetaWalkClass):
 class WebSiteRestoreNaturalKey(MyMetaWalkClass):
 
     @classmethod
-    def pre_serialize(cls, initial_obj, obj, request, options=None):
+    def pre_serialize(cls, initial_obj, obj, request, serialize_options=None):
         obj = super(WebSiteRestoreNaturalKey, cls).pre_serialize(
-            initial_obj, obj, request, options=options)
+            initial_obj, obj, request, serialize_options=serialize_options)
         obj.initial_page_bc = obj.initial_page
         obj.initial_page = None
         return obj
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, request=None):
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('websites_created_of'):
             return WALKING_STOP
         if field_name in ('initial_page', 'original_website', 'owners'):
             return ONLY_REFERENCE
         return super(WebSiteRestoreNaturalKey, cls).walking_into_class(
-            obj, field_name, model)
+            initial_obj, obj, field_name, model, request)
 
 
 class PageRestoreNaturalKey(MyMetaWalkClass):
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, request=None):
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('pages_created_of', 'created_from', 'website'):
             return ONLY_REFERENCE
         return super(PageRestoreNaturalKey, cls).walking_into_class(
-            obj, field_name, model)
+            initial_obj, obj, field_name, model, request)
 
     @classmethod
     def post_save(cls, initial_obj, obj, request=None):
@@ -223,3 +243,22 @@ class PageRestoreNaturalKey(MyMetaWalkClass):
             obj.website.save()
 
 ## End example 4
+
+## Example 4: Clone filtering objects
+
+
+class PageCloneFiltering(PageClone):
+
+    @classmethod
+    def pretreatment_fixture(cls, initial_obj, obj_fix, request=None, deserialize_options=None):
+        if isinstance(obj_fix, dict):
+            if obj_fix['fields']['slug'] == 'contact':
+                return None
+        else:  # xml format
+            for field in obj_fix.getElementsByTagName("field"):
+                if field.getAttribute("name") == "slug":
+                    if field.childNodes[0].data == 'contact':
+                        return None
+                    else:
+                        break
+        return obj_fix

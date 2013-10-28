@@ -17,6 +17,7 @@
 import json
 import sys
 
+from django.contrib.auth.models import User
 from django.conf import settings
 from django.test import TestCase
 
@@ -48,8 +49,10 @@ class DeepSerializerTestCase(TestCase):
             elif isinstance(new_obj, Page):
                 self.assertEqual(new_obj.created_from in pages, True)
                 pages.pop(pages.index(new_obj.created_from))
+            elif isinstance(new_obj, User):
+                pass
             else:
-                self.assertRaises(ValueError)
+                raise ValueError
 
     def test_clone_xml(self):
         self.test_clone(format='xml')
@@ -63,7 +66,9 @@ class DeepSerializerTestCase(TestCase):
     # Test type 2: Clone website with owners
 
     def test_clone_with_owners(self, format='json'):
+        users = list(User.objects.all())
         self.test_clone(action='clone-with-owners', format=format)
+        self.assertEqual(User.objects.all().count(), len(users) * 2)
 
     def test_clone_with_owners_xml(self):
         self.test_clone_with_owners(format='xml')
@@ -385,3 +390,30 @@ class DeepSerializerTestCase(TestCase):
         </django-objects>
         """
         self.test_error_reorder_fixtures(fixtures, format='xml')
+
+    # Test type 6: Test error reordering fixtures
+
+    def test_clone_filtering(self, action='clone-filtering-objects', format='json'):
+        websites = list(WebSite.objects.all())
+        pages = list(Page.objects.all())
+        website = WebSite.objects.get(pk=1)
+        objs = clone_website(website, action=action, format=format)
+        self.assertEqual(WebSite.objects.all().count(), len(websites) * 2)
+        self.assertEqual(Page.objects.all().count(), (len(pages) * 2) - 1)   # Does not clone the contact page
+        for new_obj in objs:
+            if isinstance(new_obj, WebSite):
+                self.assertEqual(new_obj.original_website, website)
+            elif isinstance(new_obj, Page):
+                self.assertEqual(new_obj.created_from in pages, True)
+                pages.pop(pages.index(new_obj.created_from))
+            else:
+                self.assertRaises(ValueError)
+
+    def test_clone_python_filtering(self):
+        self.test_clone_filtering(action='clone-filtering-objects', format='python')
+
+    def test_clone_yaml_filtering(self):
+        self.test_clone_filtering(action='clone-filtering-objects', format='yaml')
+
+    def test_clone_xml_filtering(self):
+        self.test_clone_filtering(action='clone-filtering-objects', format='xml')

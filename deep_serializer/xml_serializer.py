@@ -13,6 +13,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
+from django.contrib.contenttypes.models import ContentType
 
 from deep_serializer.settings import USE_INTERNAL_SERIALIZERS
 
@@ -23,6 +24,11 @@ else:
 
 from deep_serializer import base
 from deep_serializer.utils import findnth
+from xml.dom import minidom
+
+TOKEN_OBJECT_START = '<object '
+TOKEN_OBJECT_END = '</object>'
+TOKEN_OBJECTS_END = '</django-objects>'
 
 
 class Serializer(base.Serializer):
@@ -35,21 +41,42 @@ class Deserializer(base.Deserializer):
 
     @classmethod
     def deserialize_reorder(cls, fixtures, num_item, num_reorder):
-        token_object_start = '<object '
-        token_object_end = '</object>'
-        token_objects_end = '</django-objects>'
-        num_items = fixtures.count(token_object_start)
+        num_items = fixtures.count(TOKEN_OBJECT_START)
         if num_reorder > sum(range(num_items)):
             raise DeserializationError
-        fixture_first_item_start = findnth(fixtures, token_object_start, 0)
-        fixture_item_start = findnth(fixtures, token_object_start, num_item)
-        fixture_item_end = findnth(fixtures, token_object_end, num_item)
+        fixture_first_item_start = findnth(fixtures, TOKEN_OBJECT_START, 0)
+        fixture_item_start = findnth(fixtures, TOKEN_OBJECT_START, num_item)
+        fixture_item_end = findnth(fixtures, TOKEN_OBJECT_END, num_item)
         if fixture_item_start == -1 or fixture_item_end == -1:
             raise DeserializationError
         fixtures_item = fixtures[fixture_item_start:fixture_item_end + 9]
         fixtures = fixtures[:fixture_first_item_start] + fixtures[fixture_item_end + 9:]
-        last_item_index = findnth(fixtures, token_objects_end, 0)
+        last_item_index = findnth(fixtures, TOKEN_OBJECTS_END, 0)
         if last_item_index == -1:
             raise DeserializationError
         fixtures = fixtures[:last_item_index] + fixtures_item + fixtures[last_item_index:]
         return fixtures
+
+    @classmethod
+    def pretreatment_fixtures(cls, initial_obj, fixtures, walking_classes,
+                              request=None, deserialize_options=None,
+                              sorted_function=None):
+        fixture_first_item_start = findnth(fixtures, TOKEN_OBJECT_START, 0)
+        last_item_index = findnth(fixtures, TOKEN_OBJECTS_END, 0)
+        fixtures_xml = minidom.parseString(fixtures)
+        nodes = fixtures_xml.getElementsByTagName('object')
+        if sorted_function:
+            nodes.sort(cmp=sorted_function)
+        new_fixtures = ''
+        for obj_fix in nodes:
+            app_model = obj_fix.getAttribute("model")
+            if not app_model:  # m2m
+                continue
+            app_label, model = app_model.split(".")
+            model = ContentType.objects.get(model=model, app_label=app_label).model_class()
+            meta_walking_class = cls.get_meta_walking_class(model, walking_classes)
+            new_obj_fix = meta_walking_class.pretreatment_fixture(initial_obj, obj_fix, request, deserialize_options)
+            if new_obj_fix:
+                new_fixtures += new_obj_fix.toxml()
+        new_fixtures = fixtures[:fixture_first_item_start] + new_fixtures + fixtures[last_item_index:]
+        return new_fixtures

@@ -19,17 +19,21 @@ from django.contrib.auth.models import User
 from deep_serializer import serializer, deserializer, BaseMetaWalkClass
 
 from example.app.models import WebSite, Page
-from example.app.serializer import (WebSiteClone, PageClone, UserClone, WebSiteOwnersClone,
-                                    WebSiteRestore, PageRestore,
-                                    WebSiteRestoreNaturalKey, PageRestoreNaturalKey)
+from example.app.serializer import (WebSiteClone, WebSiteOwnersClone, WebSiteRestore, WebSiteRestoreNaturalKey,
+                                    PageClone, PageOwnersClone, PageCloneFiltering, PageRestore, PageRestoreNaturalKey,
+                                    UserClone)
 
 walking_clone_classes = {WebSite: WebSiteClone,
                          Page: PageClone,
                          User: BaseMetaWalkClass}
 
 walking_clone_owners_classes = {WebSite: WebSiteOwnersClone,
-                                Page: PageClone,
+                                Page: PageOwnersClone,
                                 User: UserClone}
+
+walking_filtering_classes = {WebSite: WebSiteClone,
+                             Page: PageCloneFiltering,
+                             User: BaseMetaWalkClass}
 
 walking_restore_classes = {WebSite: WebSiteRestore,
                            Page: PageRestore,
@@ -46,6 +50,9 @@ def get_params_to_serialize_deserialize(action):
         natural_keys = True
     elif action == 'clone-with-owners':
         walking_classes = walking_clone_owners_classes
+        natural_keys = True
+    elif action == 'clone-filtering-objects':
+        walking_classes = walking_filtering_classes
         natural_keys = True
     elif action == 'restore':
         walking_classes = walking_restore_classes
@@ -70,7 +77,8 @@ def deserialize_website(website, fixtures, action='clone', format='json'):
     return deserializer(format, website, fixtures,
                         request=None,
                         walking_classes=walking_classes,
-                        natural_keys=natural_keys)
+                        natural_keys=natural_keys,
+                        pretreatment_fixtures=action == 'clone-filtering-objects')
 
 
 def clone_website(website, action='clone', format='json'):

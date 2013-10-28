@@ -22,7 +22,7 @@ WALKING_INTO_CLASS = 3
 class BaseMetaWalkClass(object):
 
     @classmethod
-    def pre_serialize(cls, initial_obj, obj, request=None, options=None):
+    def pre_serialize(cls, initial_obj, obj, request=None, serialize_options=None):
         """
             Given the root object, the current object the request and some option,
             You can treatment the object before to serialize the object.
@@ -31,7 +31,7 @@ class BaseMetaWalkClass(object):
         return obj
 
     @classmethod
-    def walking_into_class(cls, obj, field_name, model, request=None):
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         """
             Given the the current object, the relation name and the model to the relation,
             You can determine if to walk into this model or not.
@@ -40,7 +40,7 @@ class BaseMetaWalkClass(object):
         return WALKING_INTO_CLASS
 
     @classmethod
-    def get_queryset_to_relation(cls, obj, field_name, queryset, request=None):
+    def get_queryset_to_relation(cls, initial_obj, obj, field_name, queryset, request=None):
         """
             Given the the current object, the relation name and the model to the relation,
             You can filter/exclude the result queryset
@@ -49,11 +49,14 @@ class BaseMetaWalkClass(object):
         return queryset
 
     @classmethod
-    def pretreatment_fixture(cls, initial_obj, obj_fix, request=None):
+    def pretreatment_fixture(cls, initial_obj, obj_fix, request=None, deserialize_options=None):
         """
             Given a dictionary (fixtures dictionary) you can treatment it,
             before to deserialize the object.
             This funcion is used at the deserialization process.
+            If you use xml format obj_fix will be a xml Element (instance of xml.dom.minidom.Element)
+            This method only is called if you call to deserialize with pretreatment_fixtures = True,
+            because this is costly
         """
         return obj_fix
 

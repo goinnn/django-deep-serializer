@@ -119,6 +119,8 @@ There are five examples (five distinct use case) in the `example project <https:
                             walking_classes=walking_classes,
                             natural_keys=natural_keys)
 
+You can see a real example in `moocng project <https://github.com/OpenMOOC/moocng/blob/feature-clone-course/moocng/courses/serializer.py>`_
+
 Test project
 ============
 

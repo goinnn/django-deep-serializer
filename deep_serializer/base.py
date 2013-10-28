@@ -178,6 +178,11 @@ class Serializer(BaseMetaWalkClassProvider):
                          natural_keys=natural_keys,
                          walking_classes=walking_classes,
                          walking_always=walking_always)
+        cls.serialize_reverse(initial_obj, obj, object_list,
+                              request=request,
+                              natural_keys=natural_keys,
+                              walking_classes=walking_classes,
+                              walking_always=walking_always)
         cls.serialize_m2m(initial_obj,
                           obj,
                           object_list,
@@ -185,11 +190,6 @@ class Serializer(BaseMetaWalkClassProvider):
                           natural_keys=natural_keys,
                           walking_classes=walking_classes,
                           walking_always=walking_always)
-        cls.serialize_reverse(initial_obj, obj, object_list,
-                              request=request,
-                              natural_keys=natural_keys,
-                              walking_classes=walking_classes,
-                              walking_always=walking_always)
         return object_list
 
     @classmethod

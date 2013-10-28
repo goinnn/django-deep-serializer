@@ -22,7 +22,13 @@ from django.utils.timezone import utc
 from hashlib import sha1
 
 from deep_serializer import (BaseMetaWalkClass, WALKING_STOP,
-                             ONLY_REFERENCE)
+                             ONLY_REFERENCE, WALKING_INTO_CLASS)
+from deep_serializer.exceptions import DeepSerializerDoesNotExist
+
+
+def update_the_serializer(obj, field_name):
+    msg = 'Please update the serializer this class: %s has not define the behavior to this relation: %s' % (obj.__class__.__name__, field_name)
+    raise DeepSerializerDoesNotExist(msg)
 
 
 class MyMetaWalkClass(BaseMetaWalkClass):
@@ -72,8 +78,9 @@ class WebSiteClone(MyMetaWalkClass):
             return WALKING_STOP
         elif field_name in ('original_website', 'owners'):
             return ONLY_REFERENCE
-        return super(WebSiteClone, cls).walking_into_class(
-            initial_obj, obj, field_name, model, request=request)
+        elif field_name == 'page':
+            return WALKING_INTO_CLASS
+        update_the_serializer(obj, field_name)
 
 
 class PageClone(MyMetaWalkClass):
@@ -89,12 +96,11 @@ class PageClone(MyMetaWalkClass):
 
     @classmethod
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
-        if field_name in ('pages_created_of', 'website'):
+        if field_name in ('pages_created_of', 'website', 'website_initial_page'):
             return WALKING_STOP
         elif field_name in ('created_from', 'last_editor'):
             return ONLY_REFERENCE
-        return super(PageClone, cls).walking_into_class(
-            initial_obj, obj, field_name, model, request=request)
+        update_the_serializer(obj, field_name)
 
     @classmethod
     def post_save(cls, initial_obj, obj, request=None):
@@ -120,10 +126,11 @@ class WebSiteOwnersClone(WebSiteClone):
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('initial_page', 'websites_created_of'):
             return WALKING_STOP
-        elif field_name in ('original_website', 'owners'):
+        elif field_name == 'original_website':
             return ONLY_REFERENCE
-        return super(WebSiteClone, cls).walking_into_class(
-            initial_obj, obj, field_name, model, request=request)
+        elif field_name in ('page', 'owners'):
+            return WALKING_INTO_CLASS
+        update_the_serializer(obj, field_name)
 
     @classmethod
     def post_save(cls, initial_obj, obj, request=None):
@@ -141,12 +148,13 @@ class PageOwnersClone(PageClone):
 
     @classmethod
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
-        if field_name in ('pages_created_of', 'website'):
+        if field_name in ('pages_created_of', 'website', 'website_initial_page'):
             return WALKING_STOP
-        elif field_name in ('created_from'):
+        elif field_name == 'created_from':
             return ONLY_REFERENCE
-        return super(PageClone, cls).walking_into_class(
-            initial_obj, obj, field_name, model, request=request)
+        elif field_name == 'last_editor':
+            return WALKING_INTO_CLASS
+        update_the_serializer(obj, field_name)
 
 
 class UserClone(BaseMetaWalkClass):
@@ -194,18 +202,20 @@ class WebSiteRestore(MyMetaWalkClass):
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('websites_created_of', 'initial_page', 'original_website', 'owners'):
             return ONLY_REFERENCE
-        return super(WebSiteRestore, cls).walking_into_class(
-            initial_obj, obj, field_name, model, request=request)
+        elif field_name == 'page':
+            return WALKING_INTO_CLASS
+        update_the_serializer(obj, field_name)
 
 
 class PageRestore(MyMetaWalkClass):
 
     @classmethod
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
-        if field_name in ('pages_created_of', 'created_from', 'website', 'last_editor'):
+        if field_name == 'website_initial_page':
+            return WALKING_STOP
+        elif field_name in ('pages_created_of', 'created_from', 'website', 'last_editor'):
             return ONLY_REFERENCE
-        return super(PageRestore, cls).walking_into_class(
-            initial_obj, obj, field_name, model, request=request)
+        update_the_serializer(obj, field_name)
 
 
 ## End example 3
@@ -227,18 +237,20 @@ class WebSiteRestoreNaturalKey(MyMetaWalkClass):
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('websites_created_of', 'initial_page', 'original_website', 'owners', 'last_editor'):
             return ONLY_REFERENCE
-        return super(WebSiteRestoreNaturalKey, cls).walking_into_class(
-            initial_obj, obj, field_name, model, request)
+        elif field_name == 'page':
+            return WALKING_INTO_CLASS
+        update_the_serializer(obj, field_name)
 
 
 class PageRestoreNaturalKey(MyMetaWalkClass):
 
     @classmethod
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
-        if field_name in ('pages_created_of', 'created_from', 'website', 'last_editor'):
+        if field_name == 'website_initial_page':
+            return WALKING_STOP
+        elif field_name in ('pages_created_of', 'created_from', 'website', 'last_editor'):
             return ONLY_REFERENCE
-        return super(PageRestoreNaturalKey, cls).walking_into_class(
-            initial_obj, obj, field_name, model, request)
+        update_the_serializer(obj, field_name)
 
     @classmethod
     def post_save(cls, initial_obj, obj, request=None):

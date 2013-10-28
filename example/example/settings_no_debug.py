@@ -18,3 +18,9 @@ from example.settings import *
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
+
+try:
+    import formadmin
+    INSTALLED_APPS += ('formadmin',)
+except ImportError:
+    pass

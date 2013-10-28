@@ -15,6 +15,7 @@
 # along with this programe.  If not, see <http://www.gnu.org/licenses/>.
 
 # Django settings for example project.
+import os
 from os import path
 
 DEBUG = True
@@ -158,11 +159,18 @@ INSTALLED_APPS = (
     'example.app'
 )
 
-try:
-    import formadmin
-    INSTALLED_APPS += ('formadmin',)
-except ImportError:
-    pass
+
+# If formadmin is installed
+from django.conf import ENVIRONMENT_VARIABLE
+# I check it if formadmin is installed of this way because if I execute
+# python manage.py runserver --settings=settings_no_debug
+# I get an error
+if os.environ[ENVIRONMENT_VARIABLE] == 'example.settings':
+    try:
+        import formadmin
+        INSTALLED_APPS += ('formadmin',)
+    except ImportError:
+        pass
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 

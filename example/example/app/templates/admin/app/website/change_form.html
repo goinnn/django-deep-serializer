@@ -3,6 +3,8 @@
 {% load i18n %}
 
 {% block object-tools-items %}
+    <li><a href="serialize/" class="serializelink">{% trans "Serialize website (primary keys)" %}</a></li>
+    <li><a href="serialize/natural-keys/" class="serializelink">{% trans "Serialize website (natural keys)" %}</a></li>
     <li><a href="clone/" class="clonelink">{% trans "Clone Website" %}</a></li>
     <li><a href="clone/with-owners/" class="clonelink">{% trans "Clone Website and its owners" %}</a></li>
     {{ block.super }}

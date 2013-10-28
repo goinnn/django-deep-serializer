@@ -16,14 +16,17 @@
 from functools import update_wrapper
 
 from django.contrib import admin
+from django.contrib import messages
+from django.contrib.admin.util import unquote
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+from django.utils.translation import ugettext
 
-
-from example.app.forms import WebSiteAdminForm
+from example.app.forms import WebSiteAdminForm, FormatFixturesForm
 from example.app.models import WebSite, Page
-from example.app.utils import clone_website
+from example.app.utils import clone_website, serialize_website
 
 
 class WebSiteAdmin(admin.ModelAdmin):
@@ -47,13 +50,56 @@ class WebSiteAdmin(admin.ModelAdmin):
             url(r'^(.+)/clone/with-owners/$',
                 wrap(self.clone_website_with_users),
                 name='clone_website'),
+            url(r'^(.+)/serialize/$',
+                wrap(self.serialize_website),
+                name='clone_website'),
+            url(r'^(.+)/serialize/natural-keys/$',
+                wrap(self.serialize_website_natural_keys),
+                name='clone_website'),
         ) + urlpatterns
         return urlpatterns
 
+    def serialize_website(self, request, object_id, form_url='', extra_context=None, action='restore'):
+        website = self.get_object(request, unquote(object_id))
+        data = request.GET or None
+        form = FormatFixturesForm(data=data)
+        if form.is_valid():
+            fixtures_format = form.cleaned_data['fixtures_format']
+            fixtures_extension = fixtures_format
+            if fixtures_extension == 'python':
+                fixtures_extension = 'py'
+            fixtures = serialize_website(website, action=action, format=fixtures_format)
+            response = HttpResponse(fixtures, mimetype='application/%s' % fixtures_format)
+            response['Content-Disposition'] = 'attachment; filename=website_%s.%s' % (website.pk, fixtures_extension)
+            return response
+        opts = self.model._meta
+        return render_to_response('admin/app/website/serialize_form.html',
+                                  {'original': website,
+                                   'app_label': opts.app_label,
+                                   'opts': opts,
+                                   'form': form,
+                                   'title': ugettext('Serialize WebSite')},
+                                  context_instance=RequestContext(request))
+
+    def serialize_website_natural_keys(self, request, object_id, form_url='', extra_context=None):
+        return self.serialize_website(request, object_id,
+                                      form_url=form_url,
+                                      extra_context=extra_context,
+                                      action='restore-natural-keys')
+
     def clone_website(self, request, object_id, form_url='', extra_context=None, action='clone'):
-        website = get_object_or_404(WebSite, pk=object_id)
-        objs = clone_website(website, action=action)
-        return HttpResponseRedirect(reverse('admin:app_website_change', args=(objs[0].pk,)))
+        website = self.get_object(request, unquote(object_id))
+        if request.method == 'POST':
+            objs = clone_website(website, action=action)
+            messages.info(request, ugettext('Created %s objects succesfully') % len(objs))
+            return HttpResponseRedirect(reverse('admin:app_website_change', args=(objs[0].pk,)))
+        opts = self.model._meta
+        return render_to_response('admin/app/website/clone_form.html',
+                                  {'original': website,
+                                   'app_label': opts.app_label,
+                                   'opts': opts,
+                                   'title': ugettext('Clone WebSite')},
+                                  context_instance=RequestContext(request))
 
     def clone_website_with_users(self, request, object_id, form_url='', extra_context=None):
         return self.clone_website(request, object_id,

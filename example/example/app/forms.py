@@ -15,8 +15,14 @@
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 from django import forms
+from django.conf import settings
 
 from example.app.models import WebSite
+
+CHOICE_FIXTURES_FORMAT = (('json', 'JSON'),
+                          ('xml', 'XML'),
+                          ('yaml', 'YAML'),
+                          ('python', 'Python'))
 
 
 class WebSiteAdminForm(forms.ModelForm):
@@ -31,3 +37,14 @@ class WebSiteAdminForm(forms.ModelForm):
             self.fields['initial_page'].queryset = self.fields['initial_page'].queryset.filter(website=self.instance)
         else:
             self.fields['initial_page'].queryset = self.fields['initial_page'].queryset.none()
+
+
+class FormatFixturesForm(forms.Form):
+
+    fixtures_format = forms.ChoiceField(choices=CHOICE_FIXTURES_FORMAT)
+
+    def as_django_admin(self):
+        if 'formadmin' in settings.INSTALLED_APPS:
+            import formadmin
+            return formadmin.forms.as_django_admin(self)
+        return self

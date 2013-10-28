@@ -19,6 +19,7 @@ import uuid
 import time
 
 from django.utils.timezone import utc
+from hashlib import sha1
 
 from deep_serializer import (BaseMetaWalkClass, WALKING_STOP,
                              ONLY_REFERENCE)
@@ -108,6 +109,10 @@ class PageClone(MyMetaWalkClass):
 
 ## Example 2: Clone an WebSite and also clone the owners
 
+def get_new_username(website_slug, username):
+    new_username = '%s--%s' % (website_slug, username)
+    return sha1(new_username.encode('utf-8')).hexdigest()
+
 
 class WebSiteOwnersClone(WebSiteClone):
 
@@ -115,18 +120,21 @@ class WebSiteOwnersClone(WebSiteClone):
     def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
         if field_name in ('initial_page', 'websites_created_of'):
             return WALKING_STOP
-        elif field_name in ('original_website'):
+        elif field_name in ('original_website', 'owners'):
             return ONLY_REFERENCE
         return super(WebSiteClone, cls).walking_into_class(
             initial_obj, obj, field_name, model, request=request)
 
     @classmethod
-    def pre_serialize(cls, initial_obj, obj, request, serialize_options=None):
-        obj = super(WebSiteOwnersClone, cls).pre_serialize(initial_obj,
-                                                           obj, request,
-                                                           serialize_options=serialize_options)
-        obj.owners = []
-        return obj
+    def post_save(cls, initial_obj, obj, request=None):
+        super(WebSiteOwnersClone, cls).pre_save(initial_obj, obj, request=request)
+        new_owners_username = []
+        for owner in initial_obj.owners.all():
+            new_username = get_new_username(initial_obj.slug, owner.username)
+            new_owners_username.append(new_username)
+        initial_obj.new_owners_username = new_owners_username
+        db_website = initial_obj.__class__.objects.get(slug=initial_obj.slug)
+        db_website.owners = []
 
 
 class PageOwnersClone(PageClone):
@@ -149,10 +157,13 @@ class UserClone(BaseMetaWalkClass):
                                                   request,
                                                   serialize_options=serialize_options)
         obj.date_joined = None
-        obj.last_login = None
-        obj.username = get_hash()
+        obj.username = get_new_username(initial_obj.slug, obj.username)
         obj.email = 'xxx@example.com'
         return obj
+
+    @classmethod
+    def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
+        return WALKING_STOP
 
     @classmethod
     def pre_save(cls, initial_obj, obj, request=None):
@@ -166,8 +177,9 @@ class UserClone(BaseMetaWalkClass):
     @classmethod
     def post_save(cls, initial_obj, obj, request=None):
         super(UserClone, cls).post_save(initial_obj, obj, request=request)
-        db_website = initial_obj.__class__.objects.get(slug=initial_obj.slug)
-        db_website.owners.add(obj)
+        if obj.username in initial_obj.new_owners_username:
+            db_website = initial_obj.__class__.objects.get(slug=initial_obj.slug)
+            db_website.owners.add(obj)
 
 
 ## End example 2
@@ -238,7 +250,7 @@ class PageRestoreNaturalKey(MyMetaWalkClass):
 
 ## End example 4
 
-## Example 4: Clone filtering objects
+## Example 5: Clone filtering objects
 
 
 class PageCloneFiltering(PageClone):
@@ -256,3 +268,5 @@ class PageCloneFiltering(PageClone):
                     else:
                         break
         return obj_fix
+
+## End example 5

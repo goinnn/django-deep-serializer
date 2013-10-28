@@ -67,7 +67,7 @@ class Page(models.Model):
                                      on_delete=models.SET_NULL)
     creation_date = models.DateTimeField(verbose_name=_('Creation date'), auto_now_add=True)
     modification_date = models.DateTimeField(verbose_name=_('Last Modification date'), auto_now=True)
-    last_editor = models.ForeignKey(User, verbose_name=_('Last editor'))
+    last_editor = models.ForeignKey(User, verbose_name=_('Last editor'), on_delete=models.SET_NULL, null=True, blank=True)
 
     objects = PageManager()
 

@@ -32,6 +32,7 @@ from example.app.utils import clone_website, serialize_website
 class WebSiteAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('title',)}
     list_display = ('title', 'slug')
+    filter_horizontal = ('owners',)
     form = WebSiteAdminForm
 
     def get_urls(self):

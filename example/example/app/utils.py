@@ -63,13 +63,15 @@ def get_params_to_serialize_deserialize(action):
     return (walking_classes, natural_keys)
 
 
-def serialize_website(website, action='clone', format='json'):
+def serialize_website(website, action='clone', format='json', serialize_options=None):
     walking_classes, natural_keys = get_params_to_serialize_deserialize(action)
     return serializer(format,
                       website, request=None,
                       walking_classes=walking_classes,
                       indent=4,
-                      natural_keys=natural_keys)
+                      natural_keys=natural_keys,
+                      can_get_objs_from_several_path=action == 'clone-with-owners',
+                      serialize_options=serialize_options)
 
 
 def deserialize_website(website, fixtures, action='clone', format='json'):

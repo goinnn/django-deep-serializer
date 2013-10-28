@@ -35,11 +35,15 @@ class MyMetaWalkClass(BaseMetaWalkClass):
 
     @classmethod
     def pre_serialize(cls, initial_obj, obj, request=None, serialize_options=None):
+        serialize_options = serialize_options or {}
+        if not hasattr(initial_obj, 'only_serializer'):
+            initial_obj.only_serializer = serialize_options.pop('only_serializer', None)
         obj = super(MyMetaWalkClass, cls).pre_serialize(initial_obj, obj,
                                                         request,
                                                         serialize_options=serialize_options)
-        obj.creation_date = None
-        obj.modification_date = None
+        if not initial_obj.only_serializer:
+            obj.creation_date = None
+            obj.modification_date = None
         return obj
 
     @classmethod
@@ -229,8 +233,9 @@ class WebSiteRestoreNaturalKey(MyMetaWalkClass):
     def pre_serialize(cls, initial_obj, obj, request, serialize_options=None):
         obj = super(WebSiteRestoreNaturalKey, cls).pre_serialize(
             initial_obj, obj, request, serialize_options=serialize_options)
-        obj.initial_page_bc = obj.initial_page
-        obj.initial_page = None
+        if not initial_obj.only_serializer:
+            obj.initial_page_bc = obj.initial_page
+            obj.initial_page = None
         return obj
 
     @classmethod

@@ -53,6 +53,7 @@ class DeepSerializerTestCase(TestCase):
                 pass
             else:
                 raise ValueError
+        return objs
 
     def test_clone_xml(self):
         self.test_clone(format='xml')
@@ -67,8 +68,21 @@ class DeepSerializerTestCase(TestCase):
 
     def test_clone_with_owners(self, format='json'):
         users = list(User.objects.all())
-        self.test_clone(action='clone-with-owners', format=format)
+        new_objs = self.test_clone(action='clone-with-owners', format=format)
         self.assertEqual(User.objects.all().count(), len(users) * 2)
+        for new_obj in new_objs:
+            if isinstance(new_obj, WebSite):
+                for owner in new_obj.owners.all():
+                    if owner in users:
+                        raise ValueError
+            elif isinstance(new_obj, Page):
+                if new_obj.last_editor in users:
+                    raise ValueError
+            elif isinstance(new_obj, User):
+                if new_obj in users:
+                    raise ValueError
+            else:
+                raise ValueError
 
     def test_clone_with_owners_xml(self):
         self.test_clone_with_owners(format='xml')

@@ -68,7 +68,6 @@ def serialize_website(website, action='clone', format='json', serialize_options=
     return serializer(format,
                       website, request=None,
                       walking_classes=walking_classes,
-                      indent=4,
                       natural_keys=natural_keys,
                       can_get_objs_from_several_path=action == 'clone-with-owners',
                       serialize_options=serialize_options)

@@ -22,6 +22,8 @@ Requeriments
 ============
 
 * `django <http://pypi.python.org/pypi/django/>`_ (>=1.4, it's possible that works with previous versions)
+* `PyYAML <https://pypi.python.org/pypi/PyYAML>`_ (>=3.10, optional only if you want use this serializer)
+* `django-form-admin <https://pypi.python.org/pypi/django-form-admin>`_ (>=0.4.2, optional only to the example project)
 
 
 Installation

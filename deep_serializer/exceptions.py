@@ -21,3 +21,8 @@ class DoesNotNaturalKeyException(Exception):
 
 class DeepSerializerDoesNotExist(Exception):
     pass
+
+
+def update_the_serializer(obj, field_name):
+    msg = 'Please update the serializer this class: %s has not define the behavior to this relation: %s' % (obj.__class__.__name__, field_name)
+    raise DeepSerializerDoesNotExist(msg)

@@ -76,8 +76,9 @@ There are five examples (five distinct use case) in the `example project <https:
                 return WALKING_STOP
             elif field_name in ('original_website', 'owners'):
                 return ONLY_REFERENCE
-            return super(WebSiteClone, cls).walking_into_class(
-                initial_obj, obj, field_name, model, request=request)
+            elif field_name == 'page':
+                return WALKING_INTO_CLASS
+            update_the_serializer(obj, field_name)
 
 
     class PageClone(MyMetaWalkClass):
@@ -93,12 +94,11 @@ There are five examples (five distinct use case) in the `example project <https:
 
         @classmethod
         def walking_into_class(cls, initial_obj, obj, field_name, model, request=None):
-            if field_name in ('pages_created_of', 'website'):
+            if field_name in ('pages_created_of', 'website', 'website_initial_page'):
                 return WALKING_STOP
             elif field_name in ('created_from', 'last_editor'):
                 return ONLY_REFERENCE
-            return super(PageClone, cls).walking_into_class(
-                initial_obj, obj, field_name, model, request=request)
+            update_the_serializer(obj, field_name)
 
         @classmethod
         def post_save(cls, initial_obj, obj, request=None):

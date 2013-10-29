@@ -23,12 +23,7 @@ from hashlib import sha1
 
 from deep_serializer import (BaseMetaWalkClass, WALKING_STOP,
                              ONLY_REFERENCE, WALKING_INTO_CLASS)
-from deep_serializer.exceptions import DeepSerializerDoesNotExist
-
-
-def update_the_serializer(obj, field_name):
-    msg = 'Please update the serializer this class: %s has not define the behavior to this relation: %s' % (obj.__class__.__name__, field_name)
-    raise DeepSerializerDoesNotExist(msg)
+from deep_serializer.exceptions import update_the_serializer
 
 
 class MyMetaWalkClass(BaseMetaWalkClass):

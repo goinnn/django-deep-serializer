@@ -277,7 +277,6 @@ class Deserializer(BaseMetaWalkClassProvider):
                     deserialize_options=None,
                     pretreatment_fixtures=False,
                     pretreatment_fixtures_sorted_function=None):
-        deserialize_options = deserialize_options or {}
         with transaction.commit_manually():
             try:
                 if pretreatment_fixtures:

@@ -197,6 +197,17 @@ LOGGING = {
     }
 }
 
+import django
+
+if django.VERSION[0] >= 1 and django.VERSION[1] >= 4:
+    TEMPLATE_CONTEXT_PROCESSORS += ('django.core.context_processors.tz',)
+    LOGGING['filters'] = {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    }
+    LOGGING['handlers']['mail_admins']['filters'] = ['require_debug_false']
+
 
 SERIALIZATION_MODULES = {
     "xml"    : "deep_serializer.serializers.xml_serializer",

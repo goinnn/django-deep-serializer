@@ -52,7 +52,7 @@ class DeepSerializerTestCase(TestCase):
             elif isinstance(new_obj, User):
                 pass
             else:
-                raise ValueError
+                raise AssertionError("The object is instance of an unknow class")
         return objs
 
     def test_clone_xml(self):
@@ -74,15 +74,15 @@ class DeepSerializerTestCase(TestCase):
             if isinstance(new_obj, WebSite):
                 for owner in new_obj.owners.all():
                     if owner in users:
-                        raise ValueError
+                        raise AssertionError("The user should be a new user")
             elif isinstance(new_obj, Page):
                 if new_obj.last_editor in users:
-                    raise ValueError
+                    raise AssertionError("The user should be a new user")
             elif isinstance(new_obj, User):
                 if new_obj in users:
-                    raise ValueError
+                    raise AssertionError("The user should be a new user")
             else:
-                raise ValueError
+                raise AssertionError("The object is instance of an unknow class")
 
     def test_clone_with_owners_xml(self):
         self.test_clone_with_owners(format='xml')
@@ -305,7 +305,7 @@ class DeepSerializerTestCase(TestCase):
             self.test_reorder_fixtures(fixtures, format=format)
         except DeserializationError:
             return
-        raise ValueError
+        raise AssertionError("The reorder should have gotten an error")
 
     def test_error_reorder_python_fixtures(self):
         fixtures = [{'fields': {'created_from': ['my-website', 'index'],

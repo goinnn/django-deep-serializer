@@ -81,9 +81,12 @@ class Serializer(BaseMetaWalkClassProvider):
             return WALKING_STOP
 
     @classmethod
-    def serialize_fk(cls, initial_obj, obj, object_list, request=None,
-                     natural_keys=True, walking_classes=None, walking_always=True,
-                     several_path=False):
+    def serialize_fk(cls, initial_obj, obj, object_list,
+                     walking_classes=None,
+                     walking_always=True,
+                     natural_keys=True,
+                     several_path=False,
+                     request=None):
         model = obj.__class__
         for field in model._meta.fields:
             if hasattr(field.rel, 'to'):
@@ -98,16 +101,23 @@ class Serializer(BaseMetaWalkClassProvider):
                 content = getattr(obj, field.name)
                 if content and not content in object_list:
                     cls.objects_to_serialize(initial_obj, content, object_list,
-                                             request, natural_keys,
-                                             walking_classes, walking_always,
-                                             several_path)
+                                             walking_classes=walking_classes,
+                                             walking_always=walking_always,
+                                             natural_keys=natural_keys,
+                                             several_path=several_path,
+                                             request=request)
                 elif content and several_path:
-                    cls.add_content(object_list, content, request, natural_keys)
+                    cls.add_content(object_list, content,
+                                    natural_keys=natural_keys,
+                                    request=request)
 
     @classmethod
-    def serialize_m2m(cls, initial_obj, obj, object_list, request=None,
-                      natural_keys=True, walking_classes=None, walking_always=True,
-                      several_path=False):
+    def serialize_m2m(cls, initial_obj, obj, object_list,
+                      walking_classes=None,
+                      walking_always=True,
+                      natural_keys=True,
+                      several_path=False,
+                      request=None):
         model = obj.__class__
         for field in model._meta.many_to_many:
             walking_status = cls.walking_into_class(initial_obj,
@@ -124,17 +134,24 @@ class Serializer(BaseMetaWalkClassProvider):
             contents = meta_class.get_queryset_to_relation(initial_obj, obj, field.name, contents, request=request)
             for content in contents:
                 if content and not content in object_list:
-                    cls.objects_to_serialize(initial_obj, content,
-                                             object_list, request, natural_keys,
-                                             walking_classes, walking_always,
-                                             several_path)
+                    cls.objects_to_serialize(initial_obj, content, object_list,
+                                             walking_classes=walking_classes,
+                                             walking_always=walking_always,
+                                             natural_keys=natural_keys,
+                                             several_path=several_path,
+                                             request=request)
                 elif content and several_path:
-                    cls.add_content(object_list, content, request, natural_keys)
+                    cls.add_content(object_list, content,
+                                    natural_keys=natural_keys,
+                                    request=request)
 
     @classmethod
-    def serialize_reverse(cls, initial_obj, obj, object_list, request=None,
-                          natural_keys=True, walking_classes=None, walking_always=True,
-                          several_path=False):
+    def serialize_reverse(cls, initial_obj, obj, object_list,
+                          walking_classes=None,
+                          walking_always=True,
+                          natural_keys=True,
+                          several_path=False,
+                          request=None):
         model = obj.__class__
         for field in model._meta.get_all_related_objects():
             related_query_name = field.field.related_query_name()
@@ -167,60 +184,71 @@ class Serializer(BaseMetaWalkClassProvider):
             for content in contents:
                 if content and not content in object_list:
                     cls.objects_to_serialize(initial_obj, content, object_list,
-                                             request, natural_keys,
-                                             walking_classes, walking_always,
-                                             several_path)
+                                             walking_classes=walking_classes,
+                                             walking_always=walking_always,
+                                             natural_keys=natural_keys,
+                                             several_path=several_path,
+                                             request=request)
                 elif content and several_path:
-                    cls.add_content(object_list, content, request, natural_keys)
+                    cls.add_content(object_list, content,
+                                    natural_keys=natural_keys,
+                                    request=request)
 
     @classmethod
-    def add_content(cls, object_list, content, request=None, natural_keys=True):
+    def add_content(cls, object_list, content, natural_keys=True, request=None):
         if natural_keys and not has_natural_key(content):
             raise DoesNotNaturalKeyException("The model %s don't have a natural key" % content.__class__)
         object_list.append(content)
 
     @classmethod
     def objects_to_serialize(cls, initial_obj, obj, object_list,
-                             request=None, natural_keys=True,
-                             walking_classes=None, walking_always=True,
-                             several_path=False):
+                             walking_classes=None,
+                             walking_always=True,
+                             natural_keys=True,
+                             several_path=False,
+                             request=None):
         walking_classes = walking_classes or []
-        cls.add_content(object_list, obj, request=request, natural_keys=natural_keys)
+        cls.add_content(object_list, obj, natural_keys=natural_keys, request=request)
         cls.serialize_fk(initial_obj,
-                         obj, object_list, request=request,
-                         natural_keys=natural_keys,
+                         obj, object_list,
                          walking_classes=walking_classes,
                          walking_always=walking_always,
-                         several_path=several_path)
+                         natural_keys=natural_keys,
+                         several_path=several_path,
+                         request=request)
         cls.serialize_m2m(initial_obj,
                           obj,
                           object_list,
-                          request=request,
-                          natural_keys=natural_keys,
                           walking_classes=walking_classes,
                           walking_always=walking_always,
-                          several_path=several_path)
+                          natural_keys=natural_keys,
+                          several_path=several_path,
+                          request=request)
         cls.serialize_reverse(initial_obj, obj, object_list,
-                              request=request,
-                              natural_keys=natural_keys,
                               walking_classes=walking_classes,
                               walking_always=walking_always,
-                              several_path=several_path)
+                              natural_keys=natural_keys,
+                              several_path=several_path,
+                              request=request)
 
     @classmethod
-    def serialize(cls, obj, request=None, walking_classes=None, natural_keys=True,
-                  indent=None, walking_always=False,
+    def serialize(cls, obj,
+                  walking_classes=None,
+                  walking_always=False,
+                  natural_keys=True,
+                  indent=None,
                   serialize_options=None,
-                  can_get_objs_from_several_path=False):
+                  can_get_objs_from_several_path=False,
+                  request=None):
         serialize_options = serialize_options or {}
         walking_classes = walking_classes or []
         object_list = []
         cls.objects_to_serialize(obj, obj, object_list,
-                                 request=request,
-                                 natural_keys=natural_keys,
                                  walking_classes=walking_classes,
                                  walking_always=walking_always,
-                                 several_path=can_get_objs_from_several_path)
+                                 natural_keys=natural_keys,
+                                 several_path=can_get_objs_from_several_path,
+                                 request=request)
         if natural_keys:
             serialize_options['use_natural_primary_keys'] = True
             serialize_options['use_natural_foreign_keys'] = True

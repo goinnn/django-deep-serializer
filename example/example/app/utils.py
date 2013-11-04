@@ -76,10 +76,11 @@ def serialize_website(website, action='clone', format='json', serialize_options=
 
 def deserialize_website(website, fixtures, action='clone', format='json'):
     walking_classes, natural_keys = get_params_to_serialize_deserialize(action)
-    return deserializer(format, website, fixtures,
-                        request=None,
+    return deserializer(format, fixtures,
+                        initial_obj=website,
                         walking_classes=walking_classes,
                         natural_keys=natural_keys,
+                        request=None,
                         pretreatment_fixtures=action == 'clone-filtering-objects')
 
 

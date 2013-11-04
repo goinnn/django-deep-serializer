@@ -297,12 +297,14 @@ class Serializer(BaseMetaWalkClassProvider):
 class Deserializer(BaseMetaWalkClassProvider):
 
     @classmethod
-    def deserialize(cls, initial_obj, fixtures, request=None,
+    def deserialize(cls, fixtures,
+                    initial_obj=None,
                     walking_classes=None,
                     using='default',
                     natural_keys=True,
                     exclude_contents=None,
                     deserialize_options=None,
+                    request=None,
                     pretreatment_fixtures=False,
                     pretreatment_fixtures_sorted_function=None):
         with transaction.commit_manually():
@@ -313,13 +315,14 @@ class Deserializer(BaseMetaWalkClassProvider):
                                                          walking_classes,
                                                          deserialize_options,
                                                          pretreatment_fixtures_sorted_function)
-                contents = cls._deserialize(initial_obj, fixtures,
-                                            request=request,
+                contents = cls._deserialize(fixtures,
+                                            initial_obj=initial_obj,
                                             walking_classes=walking_classes,
                                             using=using,
                                             natural_keys=natural_keys,
                                             exclude_contents=exclude_contents,
-                                            deserialize_options=deserialize_options)
+                                            deserialize_options=deserialize_options,
+                                            request=request)
                 transaction.commit()
                 return contents
             except Exception as e:
@@ -330,14 +333,16 @@ class Deserializer(BaseMetaWalkClassProvider):
                 raise e
 
     @classmethod
-    def _deserialize(cls, initial_obj, fixtures,
-                     request=None,
+    def _deserialize(cls, fixtures,
+                     initial_obj=None,
                      walking_classes=None,
                      using='default',
                      natural_keys=True,
                      exclude_contents=None,
                      deserialize_options=None,
-                     contents=None, num_reorder=0):
+                     request=None,
+                     contents=None,
+                     num_reorder=0):
         deserialize_options = deserialize_options or {}
         if natural_keys:
             deserialize_options['use_natural_primary_keys'] = True
@@ -383,13 +388,14 @@ class Deserializer(BaseMetaWalkClassProvider):
         if obj_does_not_exist:
             num_reorder = num_reorder + 1
             fixtures = cls.deserialize_reorder(fixtures, num_item, num_reorder)
-            cls._deserialize(initial_obj, fixtures,
-                             request=request,
+            cls._deserialize(fixtures,
+                             initial_obj=initial_obj,
                              walking_classes=walking_classes,
                              using=using,
                              natural_keys=natural_keys,
                              exclude_contents=exclude_contents,
                              deserialize_options=deserialize_options,
+                             request=request,
                              contents=contents,
                              num_reorder=num_reorder)
         return contents
@@ -400,7 +406,8 @@ class Deserializer(BaseMetaWalkClassProvider):
 
     @classmethod
     def pretreatment_fixtures(cls, initial_obj, fixtures, walking_classes,
-                              request=None, deserialize_options=None,
+                              request=None,
+                              deserialize_options=None,
                               sorted_function=None):
         raise NotImplementedError
 

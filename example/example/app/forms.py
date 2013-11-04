@@ -21,8 +21,10 @@ from example.app.models import WebSite
 
 CHOICE_FIXTURES_FORMAT = (('json', 'JSON'),
                           ('xml', 'XML'),
-                          ('yaml', 'YAML'),
                           ('python', 'Python'))
+
+if "yaml" in settings.SERIALIZATION_MODULES:
+    CHOICE_FIXTURES_FORMAT += (('yaml', 'YAML'),)
 
 
 class WebSiteAdminForm(forms.ModelForm):
@@ -42,6 +44,13 @@ class WebSiteAdminForm(forms.ModelForm):
 class FormatFixturesForm(forms.Form):
 
     fixtures_format = forms.ChoiceField(choices=CHOICE_FIXTURES_FORMAT)
+
+    def __init__(self, *args, **kwargs):
+        super(FormatFixturesForm, self).__init__(*args, **kwargs)
+        if len(CHOICE_FIXTURES_FORMAT) == 3:
+            self.fields['fixtures_format'].help_text = ('Please install '
+                                                        '<a href="https://pypi.python.org/pypi/PyYAML">PyYAML</a> '
+                                                        'if you want to export to yaml format')
 
     def as_django_admin(self):
         if 'formadmin' in settings.INSTALLED_APPS:

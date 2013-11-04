@@ -33,7 +33,6 @@
     <h2>{% trans "Please choose a format to serialize this webiste:" %} <strong> {{ original }} </strong> </h2>
     <div id="content-main">
         <form action="." method="GET">
-            {% csrf_token %}
             {{ form.as_django_admin }}
             <div class="submit-row">
                 <input type="submit" name="submit" value="{% trans "Serialize WebSite" %}"/>

@@ -232,7 +232,7 @@ class Serializer(BaseMetaWalkClassProvider):
                               request=request)
 
     @classmethod
-    def serialize(cls, obj,
+    def serialize(cls, initial_obj,
                   walking_classes=None,
                   walking_always=False,
                   natural_keys=True,
@@ -243,7 +243,7 @@ class Serializer(BaseMetaWalkClassProvider):
         serialize_options = serialize_options or {}
         walking_classes = walking_classes or []
         object_list = []
-        cls.objects_to_serialize(obj, obj, object_list,
+        cls.objects_to_serialize(initial_obj, initial_obj, object_list,
                                  walking_classes=walking_classes,
                                  walking_always=walking_always,
                                  natural_keys=natural_keys,
@@ -259,7 +259,7 @@ class Serializer(BaseMetaWalkClassProvider):
                     meta_walking_class = cls.get_meta_walking_class(content.__class__, walking_classes)
                     for field in content._meta.fields:
                         if hasattr(field.rel, 'to'):
-                            walking_status = cls.walking_into_class(obj,
+                            walking_status = cls.walking_into_class(initial_obj,
                                                                     content,
                                                                     field.name,
                                                                     field.rel.to,
@@ -275,7 +275,7 @@ class Serializer(BaseMetaWalkClassProvider):
                                 field.null = field_null
                                 field.blank = field_blank
                     for field in content._meta.many_to_many:
-                        walking_status = cls.walking_into_class(obj,
+                        walking_status = cls.walking_into_class(initial_obj,
                                                                 content,
                                                                 field.name,
                                                                 field.rel.to,
@@ -284,7 +284,7 @@ class Serializer(BaseMetaWalkClassProvider):
                                                                 request=request)
                         if walking_status == WALKING_STOP:
                             getattr(content, field.name).clear()
-                    content_to_serialize = meta_walking_class.pre_serialize(obj, content, request, serialize_options)
+                    content_to_serialize = meta_walking_class.pre_serialize(initial_obj, content, request, serialize_options)
                     if content_to_serialize and not content_to_serialize in contents_to_serialize:
                         contents_to_serialize.append(content_to_serialize)
                 fixtures = serializers.serialize(cls.format, contents_to_serialize, indent=indent,

@@ -43,17 +43,17 @@ class Deserializer(base.Deserializer):
     def deserialize_reorder(cls, fixtures, num_item, num_reorder):
         num_items = fixtures.count(TOKEN_OBJECT_START)
         if num_reorder > sum(range(num_items)):
-            raise DeserializationError
+            raise DeserializationError('Maximum number of reordering')
         fixture_first_item_start = findnth(fixtures, TOKEN_OBJECT_START, 0)
         fixture_item_start = findnth(fixtures, TOKEN_OBJECT_START, num_item)
         fixture_item_end = findnth(fixtures, TOKEN_OBJECT_END, num_item)
         if fixture_item_start == -1 or fixture_item_end == -1:
-            raise DeserializationError
+            raise DeserializationError('Bad formatting on fixtures')
         fixtures_item = fixtures[fixture_item_start:fixture_item_end + 9]
         fixtures = fixtures[:fixture_first_item_start] + fixtures[fixture_item_end + 9:]
         last_item_index = findnth(fixtures, TOKEN_OBJECTS_END, 0)
         if last_item_index == -1:
-            raise DeserializationError
+            raise DeserializationError('Bad formatting on fixtures')
         fixtures = fixtures[:last_item_index] + fixtures_item + fixtures[last_item_index:]
         return fixtures
 
@@ -70,7 +70,7 @@ class Deserializer(base.Deserializer):
         new_fixtures = ''
         for obj_fix in nodes:
             app_model = obj_fix.getAttribute("model")
-            if not app_model:  # m2m
+            if not app_model:  # m2m relations
                 continue
             app_label, model = app_model.split(".")
             model = ContentType.objects.get(model=model, app_label=app_label).model_class()

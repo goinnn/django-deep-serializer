@@ -38,7 +38,7 @@ class Deserializer(base.Deserializer):
     def deserialize_reorder(cls, fixtures, num_item, num_reorder):
         num_items = len(fixtures)
         if num_reorder > sum(range(num_items)):
-            raise DeserializationError
+            raise DeserializationError('Maximum number of reordering')
         fix_obj = fixtures[num_item]
         fixtures = fixtures[num_item + 1:]
         fixtures.append(fix_obj)

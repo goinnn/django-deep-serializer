@@ -26,6 +26,7 @@ from deep_serializer import base
 from deep_serializer.utils import findnth
 from xml.dom import minidom
 
+TOKEN_M2M_START = '<object>'
 TOKEN_OBJECT_START = '<object '
 TOKEN_OBJECT_END = '</object>'
 TOKEN_OBJECTS_END = '</django-objects>'
@@ -40,17 +41,28 @@ class Deserializer(base.Deserializer):
     format = 'xml'
 
     @classmethod
+    def calcule_item_end(cls, fixtures, start, num_m2m=0):
+        end = start + findnth(fixtures[start:], TOKEN_OBJECT_END, num_m2m)
+        if end < start:
+            raise DeserializationError('Bad formatting on fixtures')
+        fixtures_item = fixtures[start: end + len(TOKEN_OBJECT_END)]
+        num_m2m_item = fixtures_item.count(TOKEN_M2M_START)
+        if num_m2m_item != num_m2m:
+            return cls.calcule_item_end(fixtures, start, num_m2m=num_m2m_item)
+        return end
+
+    @classmethod
     def deserialize_reorder(cls, fixtures, num_item, num_reorder):
         num_items = fixtures.count(TOKEN_OBJECT_START)
         if num_reorder > sum(range(num_items)):
             raise DeserializationError('Maximum number of reordering')
         fixture_first_item_start = findnth(fixtures, TOKEN_OBJECT_START, 0)
         fixture_item_start = findnth(fixtures, TOKEN_OBJECT_START, num_item)
-        fixture_item_end = findnth(fixtures, TOKEN_OBJECT_END, num_item)
+        fixture_item_end = cls.calcule_item_end(fixtures, fixture_item_start)
         if fixture_item_start == -1 or fixture_item_end == -1:
             raise DeserializationError('Bad formatting on fixtures')
-        fixtures_item = fixtures[fixture_item_start:fixture_item_end + 9]
-        fixtures = fixtures[:fixture_first_item_start] + fixtures[fixture_item_end + 9:]
+        fixtures_item = fixtures[fixture_item_start:fixture_item_end + len(TOKEN_OBJECT_END)]
+        fixtures = fixtures[:fixture_first_item_start] + fixtures[fixture_item_end + len(TOKEN_OBJECT_END):]
         last_item_index = findnth(fixtures, TOKEN_OBJECTS_END, 0)
         if last_item_index == -1:
             raise DeserializationError('Bad formatting on fixtures')

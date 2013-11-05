@@ -43,7 +43,7 @@ If you want use natural keys, you have use the `internal serializers <https://gi
 Use cases
 =========
 
-* Serialize (using primary keys or natural keys) an object and its relations
+* Serialize (using primary keys or natural keys) an object and its relations. Sometimes django can not serialize an app. E.g. if you try to serialize the "example.app" application in the example project you will get the next error: "CommandError: Unable to serialize database: Can't resolve dependencies for app.Page, app.WebSite in serialized app list."
 * Deserialize (using primary keys or natural keys) some objects
 * Clone (using natural keys) an object. To do you can serialize, update the natural key to the main object and after deserialize these objects
 * Restore an object with its relations, (using primary keys or natural keys)
@@ -113,11 +113,12 @@ There are five examples (five distinct use case) in the `example project <https:
         walking_classes = {WebSite: WebSiteClone,
                            Page: PageClone,
                            User: BaseMetaWalkClass}
-        fixtures = serializer(format, website, request=None,
+        natural_keys = True
+        fixtures = serializer(format, website,
                               walking_classes=walking_classes,
                               natural_keys=natural_keys)
-        return deserializer(format, website, fixtures,
-                            request=None,
+        return deserializer(format, fixtures,
+                            initial_obj=website,
                             walking_classes=walking_classes,
                             natural_keys=natural_keys)
 

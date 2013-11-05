@@ -61,8 +61,12 @@ _deep_serializers = {}
 class BaseMetaWalkClassProvider(object):
 
     @classmethod
-    def get_meta_walking_class(cls, model, walking_classes):
+    def get_meta_walking_class(cls, obj_or_model, walking_classes):
         if walking_classes and isinstance(walking_classes, dict):
+            if isinstance(obj_or_model, models.Model):
+                model = obj_or_model.__class__
+            else:
+                model = obj_or_model
             return walking_classes.get(model, BaseMetaWalkClass)
         return BaseMetaWalkClass
 
@@ -75,7 +79,7 @@ class Serializer(BaseMetaWalkClassProvider):
         if walking_always:
             return WALKING_INTO_CLASS
         elif model in walking_classes:
-            meta_class = cls.get_meta_walking_class(obj.__class__, walking_classes)
+            meta_class = cls.get_meta_walking_class(obj, walking_classes)
             return meta_class.walking_into_class(initial_obj, obj, field_name, model, request=request)
         else:
             return WALKING_STOP
@@ -96,6 +100,16 @@ class Serializer(BaseMetaWalkClassProvider):
                                                         walking_classes,
                                                         walking_always,
                                                         request=request)
+
+                if walking_status == WALKING_STOP:
+                    field_null = field.null
+                    field_blank = field.blank
+                    field.null = True
+                    field.blank = True
+                    setattr(obj, field.name, None)
+                    field.null = field_null
+                    field.blank = field_blank
+
                 if walking_status != WALKING_INTO_CLASS:
                     continue
                 content = getattr(obj, field.name)
@@ -127,9 +141,12 @@ class Serializer(BaseMetaWalkClassProvider):
                                                     walking_classes,
                                                     walking_always,
                                                     request=request)
+            if walking_status == WALKING_STOP:
+                getattr(obj, field.name).clear()
+
             if walking_status != WALKING_INTO_CLASS:
                 continue
-            meta_class = cls.get_meta_walking_class(obj.__class__, walking_classes)
+            meta_class = cls.get_meta_walking_class(obj, walking_classes)
             contents = getattr(obj, field.name).all()
             contents = meta_class.get_queryset_to_relation(initial_obj, obj, field.name, contents, request=request)
             for content in contents:
@@ -173,7 +190,7 @@ class Serializer(BaseMetaWalkClassProvider):
                 if isinstance(relation, models.Model):
                     contents = [relation]
                 else:
-                    meta_class = cls.get_meta_walking_class(obj.__class__, walking_classes)
+                    meta_class = cls.get_meta_walking_class(obj, walking_classes)
                     contents = relation.all()
                     contents = meta_class.get_queryset_to_relation(initial_obj, obj,
                                                                    related_query_name,
@@ -208,7 +225,9 @@ class Serializer(BaseMetaWalkClassProvider):
                              several_path=False,
                              request=None):
         walking_classes = walking_classes or []
-        cls.add_content(object_list, obj, natural_keys=natural_keys, request=request)
+        cls.add_content(object_list, obj,
+                        natural_keys=natural_keys,
+                        request=request)
         cls.serialize_fk(initial_obj,
                          obj, object_list,
                          walking_classes=walking_classes,
@@ -243,47 +262,20 @@ class Serializer(BaseMetaWalkClassProvider):
         serialize_options = serialize_options or {}
         walking_classes = walking_classes or []
         object_list = []
-        cls.objects_to_serialize(initial_obj, initial_obj, object_list,
-                                 walking_classes=walking_classes,
-                                 walking_always=walking_always,
-                                 natural_keys=natural_keys,
-                                 several_path=can_get_objs_from_several_path,
-                                 request=request)
         if natural_keys:
             serialize_options['use_natural_primary_keys'] = True
             serialize_options['use_natural_foreign_keys'] = True
         contents_to_serialize = []
         with transaction.commit_manually():
             try:
+                cls.objects_to_serialize(initial_obj, initial_obj, object_list,
+                                         walking_classes=walking_classes,
+                                         walking_always=walking_always,
+                                         natural_keys=natural_keys,
+                                         several_path=can_get_objs_from_several_path,
+                                         request=request)
                 for content in object_list:
-                    meta_walking_class = cls.get_meta_walking_class(content.__class__, walking_classes)
-                    for field in content._meta.fields:
-                        if hasattr(field.rel, 'to'):
-                            walking_status = cls.walking_into_class(initial_obj,
-                                                                    content,
-                                                                    field.name,
-                                                                    field.rel.to,
-                                                                    walking_classes,
-                                                                    walking_always,
-                                                                    request=request)
-                            if walking_status == WALKING_STOP:
-                                field_null = field.null
-                                field_blank = field.blank
-                                field.null = True
-                                field.blank = True
-                                setattr(content, field.name, None)
-                                field.null = field_null
-                                field.blank = field_blank
-                    for field in content._meta.many_to_many:
-                        walking_status = cls.walking_into_class(initial_obj,
-                                                                content,
-                                                                field.name,
-                                                                field.rel.to,
-                                                                walking_classes,
-                                                                walking_always,
-                                                                request=request)
-                        if walking_status == WALKING_STOP:
-                            getattr(content, field.name).clear()
+                    meta_walking_class = cls.get_meta_walking_class(content, walking_classes)
                     content_to_serialize = meta_walking_class.pre_serialize(initial_obj, content, request, serialize_options)
                     if content_to_serialize and not content_to_serialize in contents_to_serialize:
                         contents_to_serialize.append(content_to_serialize)
@@ -379,7 +371,7 @@ class Deserializer(BaseMetaWalkClassProvider):
                                           obj.object._meta.module_name,
                                           obj.object.pk)
             if not obj_key in exclude_contents:
-                meta_walking_class = cls.get_meta_walking_class(obj.object.__class__, walking_classes)
+                meta_walking_class = cls.get_meta_walking_class(obj.object, walking_classes)
                 meta_walking_class.pre_save(initial_obj, obj.object, request=request)
                 obj.save(using=using)
                 meta_walking_class.post_save(initial_obj, obj.object, request=request)

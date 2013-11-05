@@ -14,6 +14,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
+# These status define the behaviour of the serializer, if the serializer
+# have to continue serializing (WALKING_INTO_CLASS), only use the reference (ONLY_REFERENCE)
+# or set this relation to none (WALKING_STOP).
+# You can use these status in one2one, fk, m2m and reverse relations.
+# For reverse relations only you can use WALKING_INTO_CLASS and ONLY_REFERENCE.
+
+
 WALKING_STOP = 1
 ONLY_REFERENCE = 2
 WALKING_INTO_CLASS = 3

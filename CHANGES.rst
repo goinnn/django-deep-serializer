@@ -1,6 +1,12 @@
 Releases
 ========
 
+0.1.1 (2013-11-13)
+------------------
+
+* Add tests to django 1.6
+* Update the django 1.5 version, from 1.5.4 to 1.5.5
+
 0.1.0 (2013-11-05)
 ------------------
 

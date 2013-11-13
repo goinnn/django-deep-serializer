@@ -18,7 +18,7 @@
 from django.conf import settings
 try:
     from django.conf.urls import include, patterns, url
-except ImportError:  # Django < 1.5
+except ImportError:  # Django < 1.4
     from django.conf.urls.defaults import include, patterns, url
 
 from django.contrib import admin

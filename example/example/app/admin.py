@@ -73,7 +73,7 @@ class WebSiteAdmin(admin.ModelAdmin):
             fixtures = serialize_website(website, action=action, format=fixtures_format, serialize_options=serialize_options)
             if fixtures_format == 'python':
                 fixtures = str(fixtures)
-            response = HttpResponse(fixtures, mimetype='application/%s' % fixtures_format)
+            response = HttpResponse(fixtures, content_type='application/%s' % fixtures_format)
             response['Content-Disposition'] = 'attachment; filename=website_%s.%s' % (website.pk, fixtures_extension)
             return response
         opts = self.model._meta

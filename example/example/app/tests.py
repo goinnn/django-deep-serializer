@@ -34,6 +34,8 @@ else:
 
 class DeepSerializerTestCase(TestCase):
 
+    fixtures = ['app_data.json']
+
     # Test type 1: Clone website
 
     def test_clone(self, action='clone', format='json'):

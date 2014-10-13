@@ -124,6 +124,15 @@ There are five examples (five distinct use case) in the `example project <https:
 
 You can see a real example in `moocng project <https://github.com/OpenMOOC/moocng/blob/feature-clone-course/moocng/courses/serializer.py>`_
 
+Development
+===========
+
+You can get the last bleeding edge version of django-deep-serializer by doing a clone
+of its git repository::
+
+  git clone https://github.com/goinnn/django-deep-serializer
+
+
 Test project
 ============
 
@@ -133,4 +142,5 @@ a readily setup project that uses django-deep-serializer. You can run it as usua
 ::
 
     python manage.py syncdb --noinput
+    python manage.py loaddata app_data.json
     python manage.py runserver
